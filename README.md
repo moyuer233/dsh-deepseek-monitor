@@ -166,6 +166,12 @@ node test/self-test.mjs   # 自测（内置 mock 上游，无需真实 Key）
 - 子代理本身是"一次性"运行（`dsh-subagent-claude-code` 的限制），监控粒度到请求级
 - 平台内部接口非公开契约，可能随平台更新而变化
 
+---
+
+如果觉得好用，请给个 ⭐ Star 支持一下！欢迎提交 Issue 和 Pull Request。
+
+---
+
 ## License
 
 MIT
