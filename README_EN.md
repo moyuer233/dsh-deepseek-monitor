@@ -30,25 +30,25 @@ Install this plugin for me: https://github.com/moyuer233/dsh-deepseek-monitor/
 
  Session header (horizontal segments)
 
-![header](screenshots/header.png)
+![header](screenshots/header-en.png)
 
 ---
 
  ⚙ Config panel (toggles + drag to reorder)
 
-![config](screenshots/config-panel.png)
+![config](screenshots/config-panel-en.png)
 
 ---
 
  "Usage" tab (details)
 
-![tab](screenshots/tab.png)
+![tab](screenshots/tab-en.png)
 
 ---
 
  Sidebar footer (vertical stack)
 
-![sidebar](screenshots/sidebar.png)
+![sidebar](screenshots/sidebar-en.png)
 
 ---
 
