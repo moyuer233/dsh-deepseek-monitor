@@ -1,5 +1,7 @@
 # dsh-deepseek-monitor
 
+---
+
 DeepSeek 用量监控 —— **DeepSeek Harness (DSH) 插件**：在会话头部/侧边栏/「用量」标签页
 实时显示 DeepSeek 平台**余额、日/月/累计 Token 总量与费用**，支持拖拽排序与开关配置；
 另附一个**本地用量代理**，为走 Anthropic 兼容协议的子代理（如 Claude Code）精确记账。
@@ -7,13 +9,27 @@ DeepSeek 用量监控 —— **DeepSeek Harness (DSH) 插件**：在会话头部
 > ⚠️ 本插件使用 platform.deepseek.com **Web 端内部接口**（非公开契约）查询你自己的账户
 > 数据，仅限个人使用；接口结构若被 DeepSeek 变更，需要同步更新 `plugin/host/lib/platform.mjs`。
 
+---
+
 ## 预览
 
-| 会话头部（横排信息段） | ⚙ 配置面板（开关 + 拖拽排序） | 「用量」标签页（详情） |
-|---|---|---|
-| ![header](screenshots/header.png) | ![config](screenshots/config-panel.png) | ![tab](screenshots/tab.png) |
+ 会话头部（横排信息段）
+ 
+![header](screenshots/header.png)
 
-> 预览图为占位数据示意图；实际显示你 DeepSeek 账户的实时数据。
+---
+
+ ⚙ 配置面板（开关 + 拖拽排序）
+ 
+![config](screenshots/config-panel.png) 
+
+---
+
+「用量」标签页（详情）
+
+![tab](screenshots/tab.png)
+
+---
 
 ## 功能
 
@@ -25,18 +41,26 @@ DeepSeek 用量监控 —— **DeepSeek Harness (DSH) 插件**：在会话头部
 - 🧮 **累计（总）数据**：费用取平台 `total_costs`，Token 逐月累加并跨月缓存
 - 🖥 **本地用量代理**（可选）：拦截 Anthropic 兼容请求，精确解析 SSE/JSON 用量并记账
 
+---
+
 ## 安装（DSH 插件）
+
+**最简单的**：
+
+`帮我安装这个插件https://github.com/moyuer233/dsh-deepseek-monitor/`
+
+**↑↑↑复制这个直接叫你的蓝色大肥鱼自己安装↑↑↑**
 
 两个插件包手工装入 profile（无需 npm 发布）：
 
 ```powershell
-# 1) 复制到 profile 的 node_modules/@local/
+#1. 复制到 profile 的 node_modules/@local/
 $dest = "$env:USERPROFILE\.dsh\profiles\node_modules\@local"
 New-Item -ItemType Directory -Force -Path $dest | Out-Null
 Copy-Item -Recurse -Force .\plugin\host   $dest\dsh-host-deepseek-usage
 Copy-Item -Recurse -Force .\plugin\client $dest\dsh-client-ui-deepseek-usage
 
-# 2) 在 profile 补丁（$env:USERPROFILE\.dsh\profiles\web\cordis.patch.yml）追加两行：
+#2. 在 profile 补丁（$env:USERPROFILE\.dsh\profiles\web\cordis.patch.yml）追加两行：
 ```
 
 ```yaml
@@ -47,7 +71,7 @@ Copy-Item -Recurse -Force .\plugin\client $dest\dsh-client-ui-deepseek-usage
       name: '@local/dsh-client-ui-deepseek-usage'
 ```
 
-3. **重启 DSH 桌面应用**（宿主代码在启动时加载；此后客户端 bundle 改动走 HMR，刷新页面即可）
+3. **重启 DSH**（宿主代码在启动时加载；此后客户端 bundle 改动走 HMR，刷新页面即可）
 
 ## 获取平台 Token（浏览器通用，Edge/Chrome/桌面端均可）
 
