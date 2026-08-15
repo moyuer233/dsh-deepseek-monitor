@@ -40,6 +40,12 @@ DeepSeek 用量监控 —— **DeepSeek Harness (DSH) 插件**：在会话头部
 
 ---
 
+ 侧边栏底部（竖排）
+
+![sidebar](screenshots/sidebar.png)
+
+---
+
 如果觉得好用，请给个 ⭐ Star 支持一下！欢迎提交 Issue 和 Pull Request。
 
 ---
