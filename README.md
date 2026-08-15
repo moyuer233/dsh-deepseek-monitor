@@ -17,7 +17,7 @@ DeepSeek 用量监控 —— **DeepSeek Harness (DSH) 插件**：在会话头部
 帮我安装这个插件https://github.com/moyuer233/dsh-deepseek-monitor/
 ```
 
-### ↑↑↑复制这个直接叫你的蓝色大肥鱼自己安装↑↑↑
+#### ↑↑↑复制这个直接叫你的蓝色大肥鱼自己安装↑↑↑
 
 ---
 ## 预览
