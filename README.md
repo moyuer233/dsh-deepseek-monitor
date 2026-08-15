@@ -11,6 +11,13 @@ DeepSeek 用量监控 —— **DeepSeek Harness (DSH) 插件**：在会话头部
 
 ---
 
+**快速安装**：
+
+`帮我安装这个插件https://github.com/moyuer233/dsh-deepseek-monitor/`
+
+**↑↑↑复制这个直接叫你的蓝色大肥鱼自己安装↑↑↑**
+
+---
 ## 预览
 
  会话头部（横排信息段）
@@ -44,12 +51,6 @@ DeepSeek 用量监控 —— **DeepSeek Harness (DSH) 插件**：在会话头部
 ---
 
 ## 安装（DSH 插件）
-
-**最简单的**：
-
-`帮我安装这个插件https://github.com/moyuer233/dsh-deepseek-monitor/`
-
-**↑↑↑复制这个直接叫你的蓝色大肥鱼自己安装↑↑↑**
 
 两个插件包手工装入 profile（无需 npm 发布）：
 
