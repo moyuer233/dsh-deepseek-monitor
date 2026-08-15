@@ -1,7 +1,7 @@
 {
   "name": "@local/dsh-client-ui-deepseek-usage",
-  "version": "0.1.1",
-  "description": "在会话头部/侧边栏/对话视图标签页显示 DeepSeek 平台用量（数据来自宿主 /dsm/usage）",
+  "version": "0.1.2",
+  "description": "DeepSeek usage monitor UI: session-header / sidebar / usage-tab panels showing balance and day-month-all-time tokens & costs (data from host /dsm/usage)",
   "type": "module",
   "main": "lib/index.js",
   "exports": {

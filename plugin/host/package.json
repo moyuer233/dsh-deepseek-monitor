@@ -1,7 +1,7 @@
 {
   "name": "@local/dsh-host-deepseek-usage",
   "version": "0.1.0",
-  "description": "DSH 宿主侧：向浏览器提供 DeepSeek 平台用量/余额 JSON 接口 (GET /dsm/usage)",
+  "description": "DSH host side: serves DeepSeek platform usage/balance JSON to the browser (GET /dsm/usage, /dsm/config, /dsm/token)",
   "type": "module",
   "main": "lib/index.js",
   "exports": {

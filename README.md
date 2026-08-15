@@ -1,5 +1,7 @@
 # DSH Deepseek Monitor
 
+**中文** | [English](README_EN.md)
+
 ---
 
 DeepSeek 用量监控 —— **DeepSeek Harness (DSH) 插件**：在会话头部/侧边栏/「用量」标签页

@@ -81,6 +81,7 @@ window.__ModuleLoader__.load({
 			"seg.monthCost": "月费",
 			"seg.total": "总量",
 			"seg.totalCost": "总费",
+			"cfg.lang": "语言",
 			"total.tokens": "累计 Token",
 			"total.cost": "累计费用",
 			"detail": "详情",
@@ -162,8 +163,17 @@ window.__ModuleLoader__.load({
 			"panel.title": "DeepSeek Usage",
 			"open.platform": "Open platform top-up page",
 			"open.platform.short": "Top up",
-			"balance.tooltip": "DeepSeek platform usage"
+			"balance.tooltip": "DeepSeek platform usage",
+			"cfg.lang": "Language"
 		};
+		//#endregion
+
+		//#region 语言（插件独立语言选择，默认中文，不受应用界面语言影响）
+		const DICTS = { zh, en };
+		function trKey(lang, key) {
+			const dict = DICTS[lang] || DICTS.zh;
+			return (dict && dict[key]) || zh[key] || key;
+		}
 		//#endregion
 
 		//#region 工具函数
@@ -198,6 +208,7 @@ window.__ModuleLoader__.load({
 			totalCost: true,
 			totalTokens: true,
 			sidebar: false,
+			lang: "zh",
 			order: [...ITEM_KEYS],
 		};
 		/** 旧版配置（balance/today/cost/month/tab）迁移到新字段。 */
@@ -690,11 +701,10 @@ window.__ModuleLoader__.load({
 
 		//#region 1) 会话头部（横向信息段 + 齿轮配置）
 		function DsmUsageAction(props) {
-			const t = props.t;
-			const tr = (key) => (t ? t(key) : (zh[key] ?? key));
 			const { data, reload } = useDsmUsage();
 			const [open, setOpen] = react.useState(null); // null | "detail" | "config"
 			const cfg = useCfg();
+			const tr = (key) => trKey(cfg.lang, key);
 			const rootRef = react.useRef(null);
 			const popoverRef = react.useRef(null);
 			const gearRef = react.useRef(null);
@@ -1026,6 +1036,38 @@ window.__ModuleLoader__.load({
 					react.createElement("div", { style: S.configDesc, children: tr("config.desc") }),
 					react.createElement(
 						"div",
+						{ style: { display: "flex", alignItems: "center", gap: "6px", margin: "0 0 4px" } },
+						react.createElement(
+							"span",
+							{ style: { font: F.small, color: "var(--dsw-alias-label-secondary, #999)", marginRight: "auto" } },
+							tr("cfg.lang")
+						),
+						[["zh", "中文"], ["en", "English"]].map(([code, label]) =>
+							react.createElement(
+								"button",
+								{
+									key: code,
+									type: "button",
+									style: {
+										...S.refreshBtn,
+										...(cfg.lang === code
+											? {
+													borderColor: "var(--dsw-alias-accent, #4c8dff)",
+													color: "var(--dsw-alias-accent, #4c8dff)"
+												}
+											: {})
+									},
+									onClick: (e) => {
+										e.stopPropagation();
+										updateCfg("lang", code);
+									}
+								},
+								label
+							)
+						)
+					),
+					react.createElement(
+						"div",
 						{ style: { margin: "4px 0 6px", borderTop: "1px solid var(--dsw-alias-border-l2, #333)" } },
 						(cfg.order || ITEM_KEYS).map((key, index) =>
 							react.createElement(Toggle, {
@@ -1217,10 +1259,9 @@ window.__ModuleLoader__.load({
 
 		//#region 2) 侧边栏底部（竖排，order + 开关驱动）
 		function DsmUsageSidebar(props) {
-			const t = props.t;
-			const tr = (key) => (t ? t(key) : (zh[key] ?? key));
 			const { data } = useDsmUsage();
 			const cfg = useCfg();
+			const tr = (key) => trKey(cfg.lang, key);
 			if (!cfg.sidebar) return null;
 			const ok = data && data.ok === true;
 			const dotColor = !data
@@ -1280,9 +1321,9 @@ window.__ModuleLoader__.load({
 
 		//#region 3) 对话视图「用量」标签页（竖排面板，始终展示完整详情）
 		function DsmUsageTab(props) {
-			const t = props.t;
-			const tr = (key) => (t ? t(key) : (zh[key] ?? key));
 			const { data, reload } = useDsmUsage();
+			const cfg = useCfg();
+			const tr = (key) => trKey(cfg.lang, key);
 			const ok = data && data.ok === true;
 			const summary = ok ? data.summary : null;
 			const today = ok ? data.today : null;
@@ -1371,7 +1412,6 @@ window.__ModuleLoader__.load({
 				() => ctx.locale.register("dsm", { zh, en }),
 				"ui-dsm-usage: dictionaries"
 			);
-			const t = ctx.locale.bind("dsm");
 			// 1) 会话头部：横向信息段 + 齿轮
 			ctx.slots.inject(
 				"conversation.session.header.actions",
@@ -1410,7 +1450,7 @@ window.__ModuleLoader__.load({
 							id: "dsm-usage",
 							order: 20,
 							locale: "dsm",
-							label: () => t("view.usage")
+							label: () => trKey(getCfg().lang, "view.usage")
 						},
 						DsmUsageTab
 					)
