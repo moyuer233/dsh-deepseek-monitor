@@ -7,6 +7,14 @@ DeepSeek 用量监控 —— **DeepSeek Harness (DSH) 插件**：在会话头部
 > ⚠️ 本插件使用 platform.deepseek.com **Web 端内部接口**（非公开契约）查询你自己的账户
 > 数据，仅限个人使用；接口结构若被 DeepSeek 变更，需要同步更新 `plugin/host/lib/platform.mjs`。
 
+## 预览
+
+| 会话头部（横排信息段） | ⚙ 配置面板（开关 + 拖拽排序） | 「用量」标签页（详情） |
+|---|---|---|
+| ![header](screenshots/header.png) | ![config](screenshots/config-panel.png) | ![tab](screenshots/tab.png) |
+
+> 预览图为占位数据示意图；实际显示你 DeepSeek 账户的实时数据。
+
 ## 功能
 
 - 📊 **会话头部横排信息段**：余额 / 日 Token / 月 Token / 日费用 / 月费用 / 总费用 / Token 总量，
