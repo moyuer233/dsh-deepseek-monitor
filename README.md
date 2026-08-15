@@ -1,4 +1,4 @@
-# dsh-deepseek-monitor
+# DSH Deepseek Monitor
 
 ---
 
@@ -11,9 +11,11 @@ DeepSeek 用量监控 —— **DeepSeek Harness (DSH) 插件**：在会话头部
 
 ---
 
-**快速安装**：
+## 快速安装
 
-`帮我安装这个插件https://github.com/moyuer233/dsh-deepseek-monitor/`
+```yaml
+帮我安装这个插件https://github.com/moyuer233/dsh-deepseek-monitor/
+```
 
 **↑↑↑复制这个直接叫你的蓝色大肥鱼自己安装↑↑↑**
 
@@ -35,6 +37,10 @@ DeepSeek 用量监控 —— **DeepSeek Harness (DSH) 插件**：在会话头部
 「用量」标签页（详情）
 
 ![tab](screenshots/tab.png)
+
+---
+
+如果觉得好用，请给个 ⭐ Star 支持一下！欢迎提交 Issue 和 Pull Request。
 
 ---
 
@@ -166,10 +172,6 @@ node test/self-test.mjs   # 自测（内置 mock 上游，无需真实 Key）
 - `stats balance` 走 DeepSeek 原生余额端点（`https://api.deepseek.com/user/balance`），需有效 API Key
 - 子代理本身是"一次性"运行（`dsh-subagent-claude-code` 的限制），监控粒度到请求级
 - 平台内部接口非公开契约，可能随平台更新而变化
-
----
-
-如果觉得好用，请给个 ⭐ Star 支持一下！欢迎提交 Issue 和 Pull Request。
 
 ---
 
