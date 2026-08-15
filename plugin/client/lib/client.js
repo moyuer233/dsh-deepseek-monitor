@@ -186,17 +186,17 @@ window.__ModuleLoader__.load({
 			return `${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
 		}
 		const CFG_KEY = "dsh.dsm-usage.config";
-		// 默认顺序与开关（用户指定）：余额开、日Token关、月Token关、日费用开、月费用关、总费用开；
-		// 总Token默认关放最后；侧边栏底部默认关。
+		// 默认顺序与开关：余额开、日Token开、月Token关、日费用开、月费用关、总费用开、Token总量开；
+		// 侧边栏底部默认关。
 		const ITEM_KEYS = ["balance", "dayTokens", "monthTokens", "dayCost", "monthCost", "totalCost", "totalTokens"];
 		const CFG_DEFAULTS = {
 			balance: true,
-			dayTokens: false,
+			dayTokens: true,
 			monthTokens: false,
 			dayCost: true,
 			monthCost: false,
 			totalCost: true,
-			totalTokens: false,
+			totalTokens: true,
 			sidebar: false,
 			order: [...ITEM_KEYS],
 		};
