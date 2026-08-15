@@ -22,7 +22,7 @@ sub-agents (e.g. Claude Code).
 Install this plugin for me: https://github.com/moyuer233/dsh-deepseek-monitor/
 ```
 
-#### ↑↑↑ Copy that and ask your own assistant to install it ↑↑↑
+#### ↑↑↑ Copy that and ask your agent to install it ↑↑↑
 
 ---
 
