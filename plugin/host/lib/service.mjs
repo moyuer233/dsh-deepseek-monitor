@@ -166,9 +166,28 @@ export function readLocalStats() {
   }
 }
 
+/** 检测本地用量代理是否在运行（healthz，短超时）。 */
+export async function checkProxyHealth() {
+  const host = process.env.DS_MONITOR_HOST ?? "127.0.0.1";
+  const port = Number(process.env.DS_MONITOR_PORT ?? 8899);
+  try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 800);
+    const res = await fetch(`http://${host}:${port}/healthz`, { signal: controller.signal });
+    clearTimeout(timer);
+    return res.ok === true;
+  } catch {
+    return false;
+  }
+}
+
 /** 收集一次完整数据（平台 + 本地），失败时返回带错误标记的结构。 */
 export async function collect() {
-  const base = { local: readLocalStats(), fetchedAt: new Date().toISOString() };
+  const base = {
+    local: readLocalStats(),
+    localEnabled: await checkProxyHealth(),
+    fetchedAt: new Date().toISOString(),
+  };
   const token = readToken();
   if (!token) {
     return {

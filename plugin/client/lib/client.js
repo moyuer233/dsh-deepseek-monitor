@@ -1,10 +1,9 @@
 // @local/dsh-client-ui-deepseek-usage / lib/client.js
 //
 // 浏览器半（手工打包的 CJS factory，格式与官方 dsh-client-ui-* bundle 一致）。
-// 三个展示位，全部由配置开关（齿轮面板里的滑块）控制：
-//   1. conversation.session.header.actions — 会话头部横向信息段
+// 展示位，全部由配置开关（齿轮面板里的滑块）控制：
+//   1. conversation.session.header.actions — 会话头部横向信息段（点击弹完整详情）
 //   2. sidebar.footer.action               — 侧边栏底部竖排
-//   3. conversation.view                   — 对话视图标签页「用量」竖排
 // 每 60s 轮询宿主路由 GET /dsm/usage；配置持久化在 localStorage。
 window.__ModuleLoader__.load({
 	id: "@local/dsh-client-ui-deepseek-usage",
@@ -85,8 +84,6 @@ window.__ModuleLoader__.load({
 			"total.tokens": "累计 Token",
 			"total.cost": "累计费用",
 			"detail": "详情",
-			"view.usage": "用量",
-			"panel.title": "DeepSeek 用量",
 			"open.platform": "打开平台充值页",
 			"open.platform.short": "充值",
 			"balance.tooltip": "DeepSeek 平台用量"
@@ -159,8 +156,6 @@ window.__ModuleLoader__.load({
 			"total.tokens": "Total tokens",
 			"total.cost": "Total cost",
 			"detail": "Details",
-			"view.usage": "Usage",
-			"panel.title": "DeepSeek Usage",
 			"open.platform": "Open platform top-up page",
 			"open.platform.short": "Top up",
 			"balance.tooltip": "DeepSeek platform usage",
@@ -550,22 +545,6 @@ window.__ModuleLoader__.load({
 				font: F.small,
 				fontVariantNumeric: "tabular-nums",
 				whiteSpace: "nowrap"
-			},
-			// ── 标签页面板（居中）──
-			tabPanel: {
-				boxSizing: "border-box",
-				display: "flex",
-				flexDirection: "column",
-				alignItems: "center",
-				gap: "10px",
-				width: "100%",
-				maxWidth: "560px",
-				margin: "0 auto",
-				padding: "16px 20px"
-			},
-			tabTitle: {
-				font: F.value,
-				margin: "0 0 2px"
 			},
 			panelCard: {
 				boxSizing: "border-box",
@@ -989,7 +968,7 @@ window.__ModuleLoader__.load({
 								react.createElement(Row, { label: tr("today.total"), value: fmtTokens(today.total) }),
 								react.createElement(Row, { label: tr("today.cost"), value: fmtCny(today.cost) })
 							),
-						local &&
+						local && data.localEnabled &&
 							react.createElement(
 								"div",
 								null,
@@ -1319,92 +1298,11 @@ window.__ModuleLoader__.load({
 		}
 		//#endregion
 
-		//#region 3) 对话视图「用量」标签页（竖排面板，始终展示完整详情）
-		function DsmUsageTab(props) {
-			const { data, reload } = useDsmUsage();
-			const cfg = useCfg();
-			const tr = (key) => trKey(cfg.lang, key);
-			const ok = data && data.ok === true;
-			const summary = ok ? data.summary : null;
-			const today = ok ? data.today : null;
-			const monthUsage = ok && data.monthUsage ? data.monthUsage : null;
-
-			return react.createElement(
-				"div",
-				{ style: S.tabPanel },
-				react.createElement(
-					"div",
-					{ style: { display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px", width: "100%" } },
-					react.createElement("div", { style: S.tabTitle, children: tr("panel.title") }),
-					react.createElement(
-						"button",
-						{
-							type: "button",
-							style: S.refreshBtn,
-							title: tr("open.platform"),
-							onClick: (e) => {
-								e.stopPropagation();
-								window.open("https://platform.deepseek.com/top_up", "_blank", "noopener,noreferrer");
-							}
-						},
-						"↗ " + tr("open.platform")
-					)
-				),
-				!ok &&
-					react.createElement(
-						"div",
-						{ style: S.error },
-						data && data.error === "NO_TOKEN"
-							? tr("noToken.title") + " — " + tr("noToken.hint")
-							: `${tr("fetchFailed")}: ${(data && (data.message || data.error)) || "?"}`
-					),
-				react.createElement(
-					"div",
-					{ style: S.panelCard },
-					react.createElement("div", { style: S.section, children: tr("month") }),
-					react.createElement(Row, { label: tr("balance"), value: summary ? fmtCny(summary.balance) : "—" }),
-					react.createElement(Row, { label: tr("bonus"), value: summary ? fmtCny(summary.bonusBalance) : "—" }),
-					react.createElement(Row, { label: tr("month.tokens"), value: monthUsage ? fmtTokens(monthUsage.tokens) : "—" }),
-					react.createElement(Row, { label: tr("month.cost"), value: monthUsage ? fmtCny(monthUsage.cost) : "—" }),
-					react.createElement(Row, { label: tr("total.tokens"), value: data.alltime ? fmtTokens(data.alltime.tokens) : "—" }),
-					react.createElement(Row, { label: tr("total.cost"), value: data.alltime ? fmtCny(data.alltime.cost) : "—" })
-				),
-				today &&
-					react.createElement(
-						"div",
-						{ style: S.panelCard },
-						react.createElement("div", { style: S.section, children: tr("today") + " · " + (data.month || "") }),
-						react.createElement(
-							"div",
-							{ style: S.rowLine },
-							react.createElement(Cell, { label: tr("today.prompt"), value: fmtTokens(today.prompt) }),
-							react.createElement(Cell, { label: tr("today.completion"), value: fmtTokens(today.completion) }),
-							react.createElement(Cell, { label: tr("today.cacheHit"), value: fmtTokens(today.cacheHit) }),
-							react.createElement(Cell, { label: tr("today.cacheMiss"), value: fmtTokens(today.cacheMiss) })
-						),
-						react.createElement(Row, { label: tr("today.total"), value: fmtTokens(today.total) }),
-						react.createElement(Row, { label: tr("today.cost"), value: fmtCny(today.cost) })
-					),
-				react.createElement(
-					"div",
-					{ style: S.footer },
-					react.createElement("span", {
-						children: (data && data.fetchedAt && tr("updated") + " " + fmtTime(data.fetchedAt)) || ""
-					}),
-					react.createElement(
-						"button",
-						{ style: S.refreshBtn, onClick: (e) => { e.stopPropagation(); reload(); } },
-						tr("refresh")
-					)
-				)
-			);
-		}
-		//#endregion
-
 		//#region 插件注册
 		const inject = ["slots", "locale"];
 		/**
-		 * 客户端插件体：注册字典 + 三个展示位。
+		 * 客户端插件体：注册字典 + 展示位（会话头部 + 侧边栏；「用量」标签页已移除，
+		 * 完整详情在点会话头部信息段弹出的窗口里）。
 		 * @param ctx - 客户端根上下文。
 		 */
 		function apply(ctx) {
@@ -1438,21 +1336,6 @@ window.__ModuleLoader__.load({
 							locale: "dsm"
 						},
 						DsmUsageSidebar
-					)
-			);
-			// 3) 对话视图标签页「用量」
-			ctx.slots.inject(
-				"conversation.view",
-				() =>
-					ctx.slots.register(
-						{
-							name: "conversation.view",
-							id: "dsm-usage",
-							order: 20,
-							locale: "dsm",
-							label: () => trKey(getCfg().lang, "view.usage")
-						},
-						DsmUsageTab
 					)
 			);
 		}

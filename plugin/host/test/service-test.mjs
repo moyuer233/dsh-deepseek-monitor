@@ -24,6 +24,9 @@ process.env.DS_PLATFORM_TOKEN_FILE = tokenFile;
 process.env.DS_MONITOR_LOG = logFile;
 process.env.DS_MONITOR_CONFIG = path.join(tmp, "config.json");
 process.env.DS_MONITOR_CACHE = path.join(tmp, "cache.json");
+// 固定一个不可能有代理的端口，保证 localEnabled 断言确定
+process.env.DS_MONITOR_PORT = "1";
+process.env.DS_MONITOR_HOST = "127.0.0.1";
 
 const now = new Date();
 const currentMonth = now.getMonth() + 1;
@@ -106,6 +109,7 @@ console.log(`\n[dsh-host-deepseek-usage] service self-test (mock :${mock.address
 
 const data = await collect();
 check("collect ok", data.ok === true, JSON.stringify(data));
+check("本地代理未启用(localEnabled=false)", data.localEnabled === false, `got ${data.localEnabled}`);
 check("余额=12.34", data.summary?.balance === 12.34);
 check("赠送=1.00", data.summary?.bonusBalance === 1);
 check("本月token=2000+10=2010", data.monthUsage?.tokens === 2010, `got ${data.monthUsage?.tokens}`);
