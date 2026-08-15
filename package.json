@@ -1,0 +1,19 @@
+{
+  "name": "dsh-deepseek-monitor",
+  "version": "0.1.0",
+  "description": "DeepSeek 用量监控代理：为 DSH 的 claude-code 子代理（headless）记录 token 消耗、费用与余额",
+  "type": "module",
+  "private": true,
+  "bin": {
+    "dsm-proxy": "proxy.mjs",
+    "dsm-stats": "stats.mjs"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "start": "node proxy.mjs",
+    "test": "node test/self-test.mjs"
+  },
+  "license": "MIT"
+}

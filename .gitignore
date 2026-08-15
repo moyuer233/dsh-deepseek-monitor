@@ -1,0 +1,15 @@
+# 依赖与构建产物
+node_modules/
+*.tgz
+
+# 日志与临时文件
+*.log
+*.tmp
+.DS_Store
+Thumbs.db
+
+# 本地数据（防御性：即使这些文件出现在仓库内也不应提交）
+platform-token
+config.json
+cache.json
+usage.jsonl
