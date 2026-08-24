@@ -1,6 +1,6 @@
-// @local/dsh-host-deepseek-usage 自测：mock 平台 API + 临时 token/记账文件，
+// dsh-deepseek-monitor 宿主自测：mock 平台 API + 临时 token/记账文件，
 // 验证 collect() 的解析与聚合。
-// 运行：node plugin/host/test/service-test.mjs
+// 运行：node test/service-test.mjs
 
 import http from "node:http";
 import os from "node:os";
@@ -105,7 +105,7 @@ const check = (name, cond, extra = "") => {
   }
 };
 
-console.log(`\n[dsh-host-deepseek-usage] service self-test (mock :${mock.address().port})`);
+console.log(`\n[dsh-deepseek-monitor] service self-test (mock :${mock.address().port})`);
 
 const data = await collect();
 check("collect ok", data.ok === true, JSON.stringify(data));

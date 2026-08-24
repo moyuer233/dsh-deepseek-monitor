@@ -12,17 +12,17 @@ sub-agents (e.g. Claude Code).
 
 > ⚠️ This plugin queries your own account data through platform.deepseek.com's
 > **internal Web endpoints** (not a public contract) — for personal use only. If the
-> platform changes these endpoints, update `plugin/host/lib/platform.mjs` accordingly.
+> platform changes these endpoints, update `lib/platform.mjs` accordingly.
 
 ---
 
 ## Quick install
 
-```yaml
-Install this plugin for me: https://github.com/moyuer233/dsh-deepseek-monitor/
+```bash
+dsh plugin --profile web add github:moyuer233/dsh-deepseek-monitor
 ```
 
-#### ↑↑↑ Copy that and ask your agent to install it ↑↑↑
+Then **restart DSH** (the host loads the new bundle at startup; afterwards client-bundle changes hot-reload via HMR — just refresh the page).
 
 ---
 
@@ -74,27 +74,21 @@ If you find it useful, please ⭐ Star the repo! Issues and Pull Requests are we
 
 ## Install (DSH plugin)
 
-The two plugin packages are installed manually into the profile (no npm publish needed):
+Standard DSH bundle shape (the repo root is the plugin package — one command, no npm publish):
 
-```powershell
-# 1. Copy into the profile's node_modules/@local/
-$dest = "$env:USERPROFILE\.dsh\profiles\node_modules\@local"
-New-Item -ItemType Directory -Force -Path $dest | Out-Null
-Copy-Item -Recurse -Force .\plugin\host   $dest\dsh-host-deepseek-usage
-Copy-Item -Recurse -Force .\plugin\client $dest\dsh-client-ui-deepseek-usage
-
-# 2. Append two rows to the profile patch ($env:USERPROFILE\.dsh\profiles\web\cordis.patch.yml):
+```bash
+dsh plugin --profile web add github:moyuer233/dsh-deepseek-monitor
 ```
 
-```yaml
-- insert:
-    - id: dsm-usage-host
-      name: '@local/dsh-host-deepseek-usage'
-    - id: ui-dsm-usage
-      name: '@local/dsh-client-ui-deepseek-usage'
-```
+> The command installs this repo as a dependency of the profile (`~/.dsh/profiles/web/`);
+> its `cordis.patch.yml` automatically injects the `dsm-usage` entry (host routes + browser bundle).
 
-3. **Restart DSH** (host code loads at startup; client bundle changes afterwards hot-reload via HMR — just refresh the page)
+3. **Restart DSH** (host code loads at startup; afterwards client-bundle changes hot-reload via HMR — just refresh the page)
+
+> The legacy manual install (`@local/dsh-host-deepseek-usage` + `@local/dsh-client-ui-deepseek-usage`
+> copied into the profile) is superseded by this command. Before upgrading, remove the
+> corresponding `- insert:` block from `~/.dsh/profiles/web/cordis.patch.yml` and delete the two
+> old directories under `~/.dsh/profiles/node_modules/@local/`.
 
 ## Getting the platform token (works in any browser: Edge / Chrome / desktop)
 

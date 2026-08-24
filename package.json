@@ -1,19 +1,41 @@
 {
   "name": "dsh-deepseek-monitor",
-  "version": "0.1.0",
-  "description": "DeepSeek 用量监控代理：为 DSH 的 claude-code 子代理（headless）记录 token 消耗、费用与余额",
+  "version": "0.2.0",
+  "description": "DeepSeek usage monitor as a DeepSeek Harness (DSH) plugin: balance / day-month-all-time token & cost panels in the chat UI with drag-reorder config, plus an optional local usage proxy",
   "type": "module",
   "private": true,
+  "main": "lib/index.js",
+  "exports": {
+    ".": "./lib/index.js",
+    "./client": "./lib/client.js",
+    "./package.json": "./package.json"
+  },
   "bin": {
     "dsm-proxy": "proxy.mjs",
     "dsm-stats": "stats.mjs"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "inject": [
+        "@deepseek-ai/dsh-client-locale",
+        "@deepseek-ai/dsh-client-runtime",
+        "@deepseek-ai/dsh-client-ui-conversation",
+        "@deepseek-ai/dsh-client-ui-sidebar",
+        "@deepseek-ai/dsh-client-ui-slots",
+        "@deepseek-ai/dsh-client-ui-primitives"
+      ],
+      "platform": "web"
+    }
   },
   "engines": {
     "node": ">=18"
   },
   "scripts": {
     "start": "node proxy.mjs",
-    "test": "node test/self-test.mjs"
+    "test": "node test/self-test.mjs && node test/service-test.mjs"
   },
   "license": "MIT"
 }

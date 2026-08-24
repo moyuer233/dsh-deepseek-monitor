@@ -9,17 +9,17 @@ DeepSeek 用量监控 —— **DeepSeek Harness (DSH) 插件**：在会话头部
 另附一个**本地用量代理**，为走 Anthropic 兼容协议的子代理（如 Claude Code）精确记账。
 
 > ⚠️ 本插件使用 platform.deepseek.com **Web 端内部接口**（非公开契约）查询你自己的账户
-> 数据，仅限个人使用；接口结构若被 DeepSeek 变更，需要同步更新 `plugin/host/lib/platform.mjs`。
+> 数据，仅限个人使用；接口结构若被 DeepSeek 变更，需要同步更新 `lib/platform.mjs`。
 
 ---
 
 ## 快速安装
 
-```yaml
-帮我安装这个插件https://github.com/moyuer233/dsh-deepseek-monitor/
+```bash
+dsh plugin --profile web add github:moyuer233/dsh-deepseek-monitor
 ```
 
-#### ↑↑↑复制这个直接叫你的蓝色大肥鱼自己安装↑↑↑
+装完**重启 DSH**（宿主在启动时加载新 bundle；此后客户端改动走 HMR，刷新页面即可）。
 
 ---
 ## 预览
@@ -66,27 +66,21 @@ DeepSeek 用量监控 —— **DeepSeek Harness (DSH) 插件**：在会话头部
 
 ## 安装（DSH 插件）
 
-两个插件包手工装入 profile（无需 npm 发布）：
+标准 DSH bundle 格式（根包即插件，一条命令安装，无需 npm 发布）：
 
-```powershell
-#1. 复制到 profile 的 node_modules/@local/
-$dest = "$env:USERPROFILE\.dsh\profiles\node_modules\@local"
-New-Item -ItemType Directory -Force -Path $dest | Out-Null
-Copy-Item -Recurse -Force .\plugin\host   $dest\dsh-host-deepseek-usage
-Copy-Item -Recurse -Force .\plugin\client $dest\dsh-client-ui-deepseek-usage
-
-#2. 在 profile 补丁（$env:USERPROFILE\.dsh\profiles\web\cordis.patch.yml）追加两行：
+```bash
+dsh plugin --profile web add github:moyuer233/dsh-deepseek-monitor
 ```
 
-```yaml
-- insert:
-    - id: dsm-usage-host
-      name: '@local/dsh-host-deepseek-usage'
-    - id: ui-dsm-usage
-      name: '@local/dsh-client-ui-deepseek-usage'
-```
+> 安装命令会把本仓库作为依赖装进 profile（`~/.dsh/profiles/web/`），
+> 其 `cordis.patch.yml` 自动向 profile 注入 `dsm-usage` 条目（宿主路由 + 浏览器端 bundle）。
 
 3. **重启 DSH**（宿主代码在启动时加载；此后客户端 bundle 改动走 HMR，刷新页面即可）
+
+> 旧版手工安装（`@local/dsh-host-deepseek-usage` + `@local/dsh-client-ui-deepseek-usage`
+> 拷贝到 profile）已被本条命令取代；升级前请从
+> `~/.dsh/profiles/web/cordis.patch.yml` 移除对应的 `- insert:` 段，
+> 并删除 `~/.dsh/profiles/node_modules/@local/` 下的两个旧目录。
 
 ## 获取平台 Token（浏览器通用，Edge/Chrome/桌面端均可）
 

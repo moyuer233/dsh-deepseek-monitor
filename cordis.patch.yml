@@ -1,0 +1,7 @@
+# dsh-deepseek-monitor bundle patch — inserts the plugin's single entry
+# (host routes + dsh.client browser bundle) into the profile roster.
+# Install with:
+#   dsh plugin --profile <name> add github:moyuer233/dsh-deepseek-monitor
+- insert:
+    - id: dsm-usage
+      name: dsh-deepseek-monitor
