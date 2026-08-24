@@ -4,4 +4,4 @@
 #   dsh plugin --profile <name> add github:moyuer233/dsh-deepseek-monitor
 - insert:
     - id: dsm-usage
-      name: dsh-deepseek-monitor
+      name: dsh-deepseek-monitor-moyuer233

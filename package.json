@@ -1,9 +1,9 @@
 {
-  "name": "dsh-deepseek-monitor",
+  "name": "dsh-deepseek-monitor-moyuer233",
   "version": "0.2.0",
   "description": "DeepSeek usage monitor as a DeepSeek Harness (DSH) plugin: balance / day-month-all-time token & cost panels in the chat UI with drag-reorder config, plus an optional local usage proxy",
   "type": "module",
-  "private": true,
+  "private": false,
   "main": "lib/index.js",
   "exports": {
     ".": "./lib/index.js",

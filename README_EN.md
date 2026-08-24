@@ -2,6 +2,8 @@
 
 [中文](README.md) | **English**
 
+[![npm downloads](https://img.shields.io/npm/dt/dsh-deepseek-monitor-moyuer233)](https://www.npmjs.com/package/dsh-deepseek-monitor-moyuer233)
+
 ---
 
 DeepSeek usage monitor — a **DeepSeek Harness (DSH) plugin**: shows your DeepSeek
@@ -19,6 +21,10 @@ sub-agents (e.g. Claude Code).
 ## Quick install
 
 ```bash
+# Install from npm (recommended)
+dsh plugin --profile web add dsh-deepseek-monitor-moyuer233
+
+# Or install directly from GitHub
 dsh plugin --profile web add github:moyuer233/dsh-deepseek-monitor
 ```
 
@@ -74,9 +80,13 @@ If you find it useful, please ⭐ Star the repo! Issues and Pull Requests are we
 
 ## Install (DSH plugin)
 
-Standard DSH bundle shape (the repo root is the plugin package — one command, no npm publish):
+Standard DSH bundle shape (the repo root is the plugin package — install from GitHub with one command, or from npm once published):
 
 ```bash
+# Install from npm (recommended)
+dsh plugin --profile web add dsh-deepseek-monitor-moyuer233
+
+# Or install directly from GitHub
 dsh plugin --profile web add github:moyuer233/dsh-deepseek-monitor
 ```
 

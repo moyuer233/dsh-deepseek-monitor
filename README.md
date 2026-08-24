@@ -2,6 +2,8 @@
 
 **中文** | [English](README_EN.md)
 
+[![npm downloads](https://img.shields.io/npm/dt/dsh-deepseek-monitor-moyuer233)](https://www.npmjs.com/package/dsh-deepseek-monitor-moyuer233)
+
 ---
 
 DeepSeek 用量监控 —— **DeepSeek Harness (DSH) 插件**：在会话头部/侧边栏/「用量」标签页
@@ -16,6 +18,10 @@ DeepSeek 用量监控 —— **DeepSeek Harness (DSH) 插件**：在会话头部
 ## 快速安装
 
 ```bash
+# 从 npm 安装（推荐）
+dsh plugin --profile web add dsh-deepseek-monitor-moyuer233
+
+# 或直接从 GitHub 安装
 dsh plugin --profile web add github:moyuer233/dsh-deepseek-monitor
 ```
 
@@ -66,9 +72,13 @@ dsh plugin --profile web add github:moyuer233/dsh-deepseek-monitor
 
 ## 安装（DSH 插件）
 
-标准 DSH bundle 格式（根包即插件，一条命令安装，无需 npm 发布）：
+标准 DSH bundle 格式（根包即插件，既可从 GitHub 一条命令安装，也可发布到 npm 后安装）：
 
 ```bash
+# 从 npm 安装（推荐）
+dsh plugin --profile web add dsh-deepseek-monitor-moyuer233
+
+# 或直接从 GitHub 安装
 dsh plugin --profile web add github:moyuer233/dsh-deepseek-monitor
 ```
 
