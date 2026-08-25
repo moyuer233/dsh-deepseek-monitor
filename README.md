@@ -20,7 +20,8 @@ DeepSeek 用量监控 —— **DeepSeek Harness (DSH) 插件**：在会话头部
 ```bash
 # 从 npm 安装（推荐）
 dsh plugin --profile web add dsh-deepseek-monitor-moyuer233
-
+```
+```bash
 # 或直接从 GitHub 安装
 dsh plugin --profile web add github:moyuer233/dsh-deepseek-monitor
 ```
