@@ -23,7 +23,8 @@ sub-agents (e.g. Claude Code).
 ```bash
 # Install from npm (recommended)
 dsh plugin --profile web add dsh-deepseek-monitor-moyuer233
-
+```
+```bash
 # Or install directly from GitHub
 dsh plugin --profile web add github:moyuer233/dsh-deepseek-monitor
 ```
