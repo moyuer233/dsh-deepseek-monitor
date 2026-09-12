@@ -1,16 +1,20 @@
-# DSH Deepseek Monitor
-
-**中文** | [English](README_EN.md)
-
 <div align="center">
 
-![license](https://img.shields.io/github/license/moyuer233/dsh-deepseek-monitor)
-![npm version](https://img.shields.io/npm/v/dsh-deepseek-monitor-moyuer233)
-![npm downloads](https://img.shields.io/npm/dt/dsh-deepseek-monitor-moyuer233)
-![node](https://img.shields.io/badge/node-%3E%3D18-339933)
-![DeepSeek Harness](https://img.shields.io/badge/DeepSeek%20Harness-plugin-4B8BBE)
+# DSH Deepseek Monitor
+
+_✨ DeepSeek Harness 插件：余额、Token 用量与费用实时可见 ✨_
 
 </div>
+
+<p align="center">
+  <img src="https://img.shields.io/github/license/moyuer233/dsh-deepseek-monitor" alt="license">
+  <img src="https://img.shields.io/npm/v/dsh-deepseek-monitor-moyuer233" alt="npm version">
+  <img src="https://img.shields.io/npm/dt/dsh-deepseek-monitor-moyuer233" alt="npm downloads">
+  <img src="https://img.shields.io/badge/node-%3E%3D18-339933" alt="node">
+  <img src="https://img.shields.io/badge/DeepSeek%20Harness-plugin-4B8BBE" alt="DeepSeek Harness">
+</p>
+
+**中文** | [English](README_EN.md)
 
 DeepSeek 用量监控 —— DeepSeek Harness (DSH) 插件：在会话头部 / 侧边栏 /「用量」标签页实时显示
 DeepSeek 平台的余额、日/月/累计 Token 总量与费用，支持拖拽排序与开关配置；另附一个本地用量代理，
