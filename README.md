@@ -4,109 +4,74 @@
 
 [![npm downloads](https://img.shields.io/npm/dt/dsh-deepseek-monitor-moyuer233)](https://www.npmjs.com/package/dsh-deepseek-monitor-moyuer233)
 
----
+DeepSeek 用量监控 —— DeepSeek Harness (DSH) 插件：在会话头部 / 侧边栏 /「用量」标签页实时显示
+DeepSeek 平台的余额、日/月/累计 Token 总量与费用，支持拖拽排序与开关配置；另附一个本地用量代理，
+为走 Anthropic 兼容协议的子代理（如 Claude Code）精确记账。
 
-DeepSeek 用量监控 —— **DeepSeek Harness (DSH) 插件**：在会话头部/侧边栏/「用量」标签页
-实时显示 DeepSeek 平台**余额、日/月/累计 Token 总量与费用**，支持拖拽排序与开关配置；
-另附一个**本地用量代理**，为走 Anthropic 兼容协议的子代理（如 Claude Code）精确记账。
+> 本插件使用 platform.deepseek.com Web 端内部接口（非公开契约）查询你自己的账户数据，仅限个人使用；
+> 接口结构若被 DeepSeek 变更，需要同步更新 `lib/platform.mjs`。
 
-> ⚠️ 本插件使用 platform.deepseek.com **Web 端内部接口**（非公开契约）查询你自己的账户
-> 数据，仅限个人使用；接口结构若被 DeepSeek 变更，需要同步更新 `lib/platform.mjs`。
+## 安装
 
----
-
-## 快速安装
+标准 DSH bundle 格式（根包即插件，既可从 npm 安装，也可从 GitHub 一条命令安装）：
 
 ```bash
 # 从 npm 安装（推荐）
 dsh plugin --profile web add dsh-deepseek-monitor-moyuer233
-```
-```bash
+
 # 或直接从 GitHub 安装
 dsh plugin --profile web add github:moyuer233/dsh-deepseek-monitor
 ```
 
-装完**重启 DSH**（宿主在启动时加载新 bundle；此后客户端改动走 HMR，刷新页面即可）。
+装完重启 DSH（宿主在启动时加载新 bundle；此后客户端改动走 HMR，刷新页面即可）。
 
----
+安装命令会把本仓库作为依赖装进 profile（`~/.dsh/profiles/web/`），其 `cordis.patch.yml`
+自动向 profile 注入 `dsm-usage` 条目（宿主路由 + 浏览器端 bundle）。
+
+> 旧版手工安装（`@local/dsh-host-deepseek-usage` + `@local/dsh-client-ui-deepseek-usage` 拷贝到 profile）
+> 已被上面的命令取代。升级前请从 `~/.dsh/profiles/web/cordis.patch.yml` 移除对应的 `- insert:` 段，
+> 并删除 `~/.dsh/profiles/node_modules/@local/` 下的两个旧目录。
+
+## 功能
+
+- 会话头部横排信息段：余额 / 日 Token / 月 Token / 日费用 / 月费用 / 总费用 / Token 总量，每段独立开关、可通过 ≡ 手柄拖拽排序
+- 三个展示位：会话头部（横排）、侧边栏底部（竖排）、对话视图「用量」标签页（详情）
+- 60 秒自动刷新；配置双通道持久化（localStorage + 宿主 config.json，与应用随机端口无关）
+- 浏览器通用 Token 获取：书签一键复制 / 控制台代码 / 面板内粘贴保存（自动去引号，立即生效）
+- 累计（总）数据：费用取平台 `total_costs`，Token 逐月累加并跨月缓存
+- 本地用量代理（可选）：拦截 Anthropic 兼容请求，精确解析 SSE/JSON 用量并记账
+
 ## 预览
 
- 会话头部（横排信息段）
- 
+会话头部（横排信息段）
+
 ![header](screenshots/header.png)
 
----
+配置面板（开关 + 拖拽排序）
 
- ⚙ 配置面板（开关 + 拖拽排序）
- 
-![config](screenshots/config-panel.png) 
-
----
+![config](screenshots/config-panel.png)
 
 「用量」标签页（详情）
 
 ![tab](screenshots/tab.png)
 
----
-
- 侧边栏底部（竖排）
+侧边栏底部（竖排）
 
 ![sidebar](screenshots/sidebar.png)
 
----
-
-如果觉得好用，请给个 ⭐ Star 支持一下！欢迎提交 Issue 和 Pull Request。
-
----
-
-## 功能
-
-- 📊 **会话头部横排信息段**：余额 / 日 Token / 月 Token / 日费用 / 月费用 / 总费用 / Token 总量，
-  每段独立开关、**≡ 拖拽排序**
-- 📌 **三个展示位**：会话头部（横排）、侧边栏底部（竖排）、对话视图「用量」标签页（详情）
-- 🔄 **60 秒自动刷新**；配置**双通道持久化**（localStorage + 宿主 config.json，与应用随机端口无关）
-- 🔑 **浏览器通用 Token 获取**：书签一键复制 / 控制台代码 / 面板内粘贴保存（自动去引号，立即生效）
-- 🧮 **累计（总）数据**：费用取平台 `total_costs`，Token 逐月累加并跨月缓存
-- 🖥 **本地用量代理**（可选）：拦截 Anthropic 兼容请求，精确解析 SSE/JSON 用量并记账
-
----
-
-## 安装（DSH 插件）
-
-标准 DSH bundle 格式（根包即插件，既可从 GitHub 一条命令安装，也可发布到 npm 后安装）：
-
-```bash
-# 从 npm 安装（推荐）
-dsh plugin --profile web add dsh-deepseek-monitor-moyuer233
-
-# 或直接从 GitHub 安装
-dsh plugin --profile web add github:moyuer233/dsh-deepseek-monitor
-```
-
-> 安装命令会把本仓库作为依赖装进 profile（`~/.dsh/profiles/web/`），
-> 其 `cordis.patch.yml` 自动向 profile 注入 `dsm-usage` 条目（宿主路由 + 浏览器端 bundle）。
-
-3. **重启 DSH**（宿主代码在启动时加载；此后客户端 bundle 改动走 HMR，刷新页面即可）
-
-> 旧版手工安装（`@local/dsh-host-deepseek-usage` + `@local/dsh-client-ui-deepseek-usage`
-> 拷贝到 profile）已被本条命令取代；升级前请从
-> `~/.dsh/profiles/web/cordis.patch.yml` 移除对应的 `- insert:` 段，
-> 并删除 `~/.dsh/profiles/node_modules/@local/` 下的两个旧目录。
-
 ## 获取平台 Token（浏览器通用，Edge/Chrome/桌面端均可）
 
-1. 打开 ⚙ 面板 → 「平台 Token」区
-2. 点 **打开平台页面** 并登录
-3. 把 **🔑 获取 Token** 链接**拖到浏览器书签栏**；之后登录平台页时**点一下书签**即自动复制 Token
-   （备选：**复制书签链接**手动建书签，或**复制控制台代码**在 F12 里执行）
-4. 回到面板 **粘贴（自动去引号）→ 保存** —— 立即生效，无需重启
+1. 打开配置面板 → 「平台 Token」区
+2. 点「打开平台页面」并登录
+3. 把「获取 Token」链接拖到浏览器书签栏；之后登录平台页时点一下书签即自动复制 Token
+   （备选：复制书签链接手动建书签，或复制控制台代码在 F12 里执行）
+4. 回到面板粘贴（自动去引号）→ 保存，立即生效，无需重启
 
 保存走宿主 `POST /dsm/token` 原子写入 `~/.dsh/deepseek-monitor/platform-token`。
 
 ## 配置
 
-- 会话头部按 **日 / 月 / 总量** 显示 Token 与费用（余额另列）；⚙ 面板每行左侧 **≡ 手柄**
-  拖动排序、开关控制显隐，**同步作用于头部横排与侧边栏竖排**；「用量」标签页始终展示完整详情
+- 会话头部按日 / 月 / 总量显示 Token 与费用（余额另列）；面板每行左侧的 ≡ 手柄可拖动排序、开关控制显隐，同步作用于头部横排与侧边栏竖排；「用量」标签页始终展示完整详情
 - 配置持久化：`~/.dsh/deepseek-monitor/config.json`（宿主，与应用端口无关）+ localStorage（会话内）
 
 ## 数据来源（platform.deepseek.com 内部 API）
@@ -181,12 +146,12 @@ node test/self-test.mjs   # 自测（内置 mock 上游，无需真实 Key）
 
 ## 已知限制
 
-- 代理只统计**经过它的**请求；直接访问 DeepSeek 的流量不计入
+- 代理只统计经过它的请求；直接访问 DeepSeek 的流量不计入
 - `stats balance` 走 DeepSeek 原生余额端点（`https://api.deepseek.com/user/balance`），需有效 API Key
-- 子代理本身是"一次性"运行（`dsh-subagent-claude-code` 的限制），监控粒度到请求级
+- 子代理本身是一次性运行（`dsh-subagent-claude-code` 的限制），监控粒度到请求级
 - 平台内部接口非公开契约，可能随平台更新而变化
 
----
+如果觉得好用，请给个 Star 支持一下，欢迎提交 Issue 和 Pull Request。
 
 ## License
 
