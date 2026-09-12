@@ -10,6 +10,9 @@ _✨ A DeepSeek Harness plugin: balance, token usage and cost at a glance ✨_
   <img src="https://img.shields.io/github/license/moyuer233/dsh-deepseek-monitor" alt="license">
   <img src="https://img.shields.io/npm/v/dsh-deepseek-monitor-moyuer233" alt="npm version">
   <img src="https://img.shields.io/npm/dt/dsh-deepseek-monitor-moyuer233" alt="npm downloads">
+  <img src="https://img.shields.io/github/commit-activity/m/moyuer233/dsh-deepseek-monitor" alt="commit activity">
+  <img src="https://img.shields.io/github/last-commit/moyuer233/dsh-deepseek-monitor" alt="last commit">
+  <br>
   <img src="https://img.shields.io/badge/node-%3E%3D18-339933" alt="node">
   <img src="https://img.shields.io/badge/DeepSeek%20Harness-plugin-4B8BBE" alt="DeepSeek Harness">
 </p>
