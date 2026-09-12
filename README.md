@@ -2,7 +2,16 @@
 
 **中文** | [English](README_EN.md)
 
-[![npm downloads](https://img.shields.io/npm/dt/dsh-deepseek-monitor-moyuer233)](https://www.npmjs.com/package/dsh-deepseek-monitor-moyuer233)
+<div align="center">
+
+![license](https://img.shields.io/github/license/moyuer233/dsh-deepseek-monitor)
+![npm version](https://img.shields.io/npm/v/dsh-deepseek-monitor-moyuer233)
+![npm downloads](https://img.shields.io/npm/dt/dsh-deepseek-monitor-moyuer233)
+
+![node](https://img.shields.io/badge/node-%3E%3D18-339933)
+![DeepSeek Harness](https://img.shields.io/badge/DeepSeek%20Harness-plugin-4B8BBE)
+
+</div>
 
 DeepSeek 用量监控 —— DeepSeek Harness (DSH) 插件：在会话头部 / 侧边栏 /「用量」标签页实时显示
 DeepSeek 平台的余额、日/月/累计 Token 总量与费用，支持拖拽排序与开关配置；另附一个本地用量代理，
