@@ -7,7 +7,6 @@
 ![license](https://img.shields.io/github/license/moyuer233/dsh-deepseek-monitor)
 ![npm version](https://img.shields.io/npm/v/dsh-deepseek-monitor-moyuer233)
 ![npm downloads](https://img.shields.io/npm/dt/dsh-deepseek-monitor-moyuer233)
-
 ![node](https://img.shields.io/badge/node-%3E%3D18-339933)
 ![DeepSeek Harness](https://img.shields.io/badge/DeepSeek%20Harness-plugin-4B8BBE)
 
