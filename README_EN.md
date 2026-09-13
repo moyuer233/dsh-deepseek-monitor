@@ -1,10 +1,6 @@
-<div align="center">
-
 # DSH Deepseek Monitor
 
 _✨ A DeepSeek Harness plugin: balance, token usage and cost at a glance ✨_
-
-</div>
 
 <p align="center">
   <img src="https://img.shields.io/github/license/moyuer233/dsh-deepseek-monitor" alt="license">

@@ -1,10 +1,6 @@
-<div align="center">
-
 # DSH Deepseek Monitor
 
 _✨ DeepSeek Harness 插件：余额、Token 用量与费用实时可见 ✨_
-
-</div>
 
 <p align="center">
   <img src="https://img.shields.io/github/license/moyuer233/dsh-deepseek-monitor" alt="license">
