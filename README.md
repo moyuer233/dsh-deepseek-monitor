@@ -17,7 +17,7 @@ DeepSeek 平台的余额、日/月/累计 Token 总量与费用，支持拖拽�
 
 ## 安装
 
-标准 DSH bundle 格式（根包即插件，既可从 npm 安装，也可从 GitHub 一条命令安装）：
+标准 DSH bundle 格式（根包即插件，既可从 npm 安装，也可从 GitHub 一条命令安装）。当前版本 `0.2.0`，npm 包名 `dsh-deepseek-monitor-moyuer233`。
 
 ```bash
 # 从 npm 安装（推荐）
@@ -77,6 +77,7 @@ dsh plugin --profile web add github:moyuer233/dsh-deepseek-monitor
 
 - 会话头部按日 / 月 / 总量显示 Token 与费用（余额另列）；面板每行左侧的 ≡ 手柄可拖动排序、开关控制显隐，同步作用于头部横排与侧边栏竖排；「用量」标签页始终展示完整详情
 - 配置持久化：`~/.dsh/deepseek-monitor/config.json`（宿主，与应用端口无关）+ localStorage（会话内）
+- 界面语言：面板内可切换中文 / English（默认中文）
 
 ## 数据来源（platform.deepseek.com 内部 API）
 
@@ -154,6 +155,12 @@ node test/self-test.mjs   # 自测（内置 mock 上游，无需真实 Key）
 - `stats balance` 走 DeepSeek 原生余额端点（`https://api.deepseek.com/user/balance`），需有效 API Key
 - 子代理本身是一次性运行（`dsh-subagent-claude-code` 的限制），监控粒度到请求级
 - 平台内部接口非公开契约，可能随平台更新而变化
+
+## 更新日志
+
+### 0.2.0
+
+- npm 首个发布版本：余额与日 / 月 / 累计用量面板、拖拽排序与开关配置、浏览器通用 Token 获取、可选本地用量代理、界面语言切换
 
 如果觉得好用，请给个 Star 支持一下，欢迎提交 Issue 和 Pull Request。
 
