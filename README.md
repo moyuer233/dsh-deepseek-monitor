@@ -2,16 +2,9 @@
 
 _✨ DeepSeek Harness 插件：余额、Token 用量与费用实时可见 ✨_
 
-<p align="center">
-  <img src="https://img.shields.io/github/license/moyuer233/dsh-deepseek-monitor" alt="license">
-  <img src="https://img.shields.io/npm/v/dsh-deepseek-monitor-moyuer233" alt="npm version">
-  <img src="https://img.shields.io/npm/dt/dsh-deepseek-monitor-moyuer233" alt="npm downloads">
-  <img src="https://img.shields.io/github/commit-activity/m/moyuer233/dsh-deepseek-monitor" alt="commit activity">
-  <img src="https://img.shields.io/github/last-commit/moyuer233/dsh-deepseek-monitor" alt="last commit">
-  <br>
-  <img src="https://img.shields.io/badge/node-%3E%3D18-339933" alt="node">
-  <img src="https://img.shields.io/badge/DeepSeek%20Harness-plugin-4B8BBE" alt="DeepSeek Harness">
-</p>
+![license](https://img.shields.io/github/license/moyuer233/dsh-deepseek-monitor) ![npm version](https://img.shields.io/npm/v/dsh-deepseek-monitor-moyuer233) ![npm downloads](https://img.shields.io/npm/dt/dsh-deepseek-monitor-moyuer233)
+![commit activity](https://img.shields.io/github/commit-activity/m/moyuer233/dsh-deepseek-monitor) ![last commit](https://img.shields.io/github/last-commit/moyuer233/dsh-deepseek-monitor)
+![node](https://img.shields.io/badge/node-%3E%3D18-339933) ![DeepSeek Harness](https://img.shields.io/badge/DeepSeek%20Harness-plugin-4B8BBE)
 
 **中文** | [English](README_EN.md)
 
