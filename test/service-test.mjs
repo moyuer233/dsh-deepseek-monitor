@@ -28,10 +28,21 @@ process.env.DS_MONITOR_CACHE = path.join(tmp, "cache.json");
 process.env.DS_MONITOR_PORT = "1";
 process.env.DS_MONITOR_HOST = "127.0.0.1";
 
-const now = new Date();
-const currentMonth = now.getMonth() + 1;
-const currentYear = now.getFullYear();
-const today = now.toISOString().slice(0, 10);
+const {
+  collect,
+  readLocalStats,
+  readConfig,
+  writeConfig,
+  writeToken,
+  readToken,
+  resetResidentState,
+  zonedParts,
+  TZ_OFFSET_HOURS,
+} = await import("../lib/service.mjs");
+
+// 平台按账户时区（默认 UTC+8）分桶，测试也用同一口径算「今天 / 本月」，
+// 否则断言会随运行时刻（UTC 与北京日期不同的那 8 小时）漂移。
+const { year: currentYear, month: currentMonth, day: today } = zonedParts();
 const dayEntry = (date, usage, cost) => ({
   date,
   data: [
@@ -93,7 +104,6 @@ const mock = http.createServer((req, res) => {
 await new Promise((r) => mock.listen(0, "127.0.0.1", r));
 process.env.DS_PLATFORM_BASE = `http://127.0.0.1:${mock.address().port}/api/v0`;
 
-const { collect, readLocalStats } = await import("../lib/service.mjs");
 const { summarizeDayUsage } = await import("../lib/platform.mjs");
 
 let failures = 0;
@@ -128,6 +138,15 @@ check("本地：input=1000", data.local?.inputTokens === 1000);
 check("本地：output=500", data.local?.outputTokens === 500);
 check("本地：费用>0", data.local?.costCny === 0.000895);
 
+// ── 采集缓存（TTL + 单飞）────────────────────────────────────────────────
+const again = await collect();
+check("TTL 缓存：重复 collect 复用同一结果", again === data);
+const forced = await collect({ force: true });
+check("force 绕过缓存", forced !== data && forced.ok === true);
+check("force 后内容仍正确", forced.summary?.balance === 12.34 && forced.alltime?.tokens === 2010);
+const [sf1, sf2] = await Promise.all([collect({ force: true }), collect({ force: true })]);
+check("单飞：并发 force 合并成一次采集", sf1 === sf2);
+
 // 无 token 分支
 fs.rmSync(tokenFile, { force: true });
 delete process.env.DS_PLATFORM_TOKEN;
@@ -136,7 +155,6 @@ check("无 token → NO_TOKEN", noToken.ok === false && noToken.error === "NO_TO
 check("无 token → 有提示", typeof noToken.hint === "string" && noToken.hint.length > 0);
 
 // 配置读写（跨启动持久化）
-const { readConfig, writeConfig } = await import("../lib/service.mjs");
 check("初始无配置", readConfig() === null);
 writeConfig({ balance: false, today: true, cost: false, month: true, sidebar: false });
 const savedCfg = readConfig();
@@ -145,9 +163,47 @@ fs.rmSync(path.join(tmp, "config.json"), { force: true });
 check("删除后无配置", readConfig() === null);
 
 // token 写入（UI 一键保存路径）
-const { writeToken, readToken } = await import("../lib/service.mjs");
 writeToken("  new-token-abc  ");
 check("writeToken 后 readToken 返回新值", readToken() === "new-token-abc", JSON.stringify(readToken()));
+
+// ── 记账时区（回归：UTC 日期在北京时间 00:00–08:00 会取到前一天）──────────
+check("默认时区偏移 = +8", TZ_OFFSET_HOURS === 8, `got ${TZ_OFFSET_HOURS}`);
+const p1 = zonedParts(new Date("2026-09-16T19:00:00.000Z")); // 北京 09-17 03:00
+check("UTC 19:00 → 北京次日", p1.day === "2026-09-17" && p1.month === 9, JSON.stringify(p1));
+const p2 = zonedParts(new Date("2026-09-16T15:59:00.000Z")); // 北京 09-16 23:59
+check("UTC 15:59 → 北京当日", p2.day === "2026-09-16", JSON.stringify(p2));
+const p3 = zonedParts(new Date("2025-12-31T16:00:00.000Z")); // 北京 2026-01-01 00:00
+check("跨年 → 2026-01-01", p3.day === "2026-01-01" && p3.year === 2026 && p3.month === 1, JSON.stringify(p3));
+
+// ── 记账增量解析（只吃整行、截断后重算）──────────────────────────────────
+resetResidentState();
+const s1 = readLocalStats();
+check("增量：首轮 1 条", s1.records === 1 && s1.inputTokens === 1000, JSON.stringify(s1));
+
+fs.appendFileSync(
+  logFile,
+  JSON.stringify({ kind: "messages", inputTokens: 10, outputTokens: 5, totalCostCny: 0.001 }) + "\n"
+);
+const s2 = readLocalStats();
+check("增量：追加整行后 2 条", s2.records === 2 && s2.inputTokens === 1010, JSON.stringify(s2));
+
+fs.appendFileSync(
+  logFile,
+  JSON.stringify({ kind: "messages", inputTokens: 999, outputTokens: 0, totalCostCny: 0 })
+);
+const s3 = readLocalStats();
+check("增量：未写完的半行不计入", s3.records === 2 && s3.inputTokens === 1010, JSON.stringify(s3));
+
+fs.appendFileSync(logFile, "\n");
+const s4 = readLocalStats();
+check("增量：补上换行后计入", s4.records === 3 && s4.inputTokens === 2009, JSON.stringify(s4));
+
+fs.writeFileSync(
+  logFile,
+  JSON.stringify({ kind: "count_tokens", inputTokens: 7, outputTokens: 0, totalCostCny: 0 }) + "\n"
+);
+const s5 = readLocalStats();
+check("增量：文件截断后从头重算", s5.records === 1 && s5.inputTokens === 7, JSON.stringify(s5));
 
 mock.closeAllConnections?.();
 mock.close();

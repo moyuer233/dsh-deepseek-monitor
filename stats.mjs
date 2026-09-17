@@ -16,7 +16,7 @@
 import fs from "node:fs";
 import https from "node:https";
 import { readRecords, defaultLogPath } from "./lib/logger.mjs";
-import { modelPricing, computeCost } from "./lib/pricing.mjs";
+import { zonedParts } from "./lib/service.mjs";
 
 const LOG_FILE = defaultLogPath();
 const BALANCE_URL = process.env.DS_MONITOR_BALANCE_URL ?? "https://api.deepseek.com/user/balance";
@@ -99,9 +99,15 @@ function cmdTotals() {
   printSummary("累计用量", readRecords(LOG_FILE));
 }
 
+/** 把一条记账记录的 UTC 时间戳按记账时区折算成 "YYYY-MM-DD"。 */
+function recordDay(ts) {
+  const t = Date.parse(ts ?? "");
+  return Number.isFinite(t) ? zonedParts(new Date(t)).day : "";
+}
+
 function cmdToday() {
-  const today = new Date().toISOString().slice(0, 10);
-  const records = readRecords(LOG_FILE).filter((r) => (r.ts ?? "").slice(0, 10) === today);
+  const today = zonedParts().day;
+  const records = readRecords(LOG_FILE).filter((r) => recordDay(r.ts) === today);
   printSummary(`今日用量（${today}）`, records);
 }
 
