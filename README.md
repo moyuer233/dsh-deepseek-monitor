@@ -8,7 +8,7 @@ _✨ DeepSeek Harness 插件：余额、Token 用量与费用实时可见 ✨_
 
 **中文** | [English](README_EN.md)
 
-DeepSeek 用量监控 —— DeepSeek Harness (DSH) 插件：在会话头部 / 侧边栏 /「用量」标签页实时显示
+DeepSeek 用量监控 —— DeepSeek Harness (DSH) 插件：在会话头部与侧边栏实时显示
 DeepSeek 平台的余额、日/月/累计 Token 总量与费用，支持拖拽排序与开关配置；另附一个本地用量代理，
 为走 Anthropic 兼容协议的子代理（如 Claude Code）精确记账。
 
@@ -17,7 +17,7 @@ DeepSeek 平台的余额、日/月/累计 Token 总量与费用，支持拖拽�
 
 ## 安装
 
-标准 DSH bundle 格式（根包即插件，既可从 npm 安装，也可从 GitHub 一条命令安装）。当前版本 `0.2.1`，npm 包名 `dsh-deepseek-monitor-moyuer233`。
+标准 DSH bundle 格式（根包即插件，既可从 npm 安装，也可从 GitHub 一条命令安装）。当前版本 `0.2.2`，npm 包名 `dsh-deepseek-monitor-moyuer233`。
 
 ```bash
 # 从 npm 安装（推荐）
@@ -39,8 +39,8 @@ dsh plugin --profile web add github:moyuer233/dsh-deepseek-monitor
 ## 功能
 
 - 会话头部横排信息段：余额 / 日 Token / 月 Token / 日费用 / 月费用 / 总费用 / Token 总量，每段独立开关、可通过 ≡ 手柄拖拽排序
-- 三个展示位：会话头部（横排）、侧边栏底部（竖排）、对话视图「用量」标签页（详情）
-- 60 秒自动刷新；配置双通道持久化（localStorage + 宿主 config.json，与应用随机端口无关）
+- 两个展示位：会话头部（横排）与侧边栏底部（竖排）；点信息段或 ⚙ 弹出完整详情与配置面板
+- 60 秒自动刷新（页面隐藏时暂停；多个展示位与多个标签页共用同一次采集）；配置双通道持久化（localStorage + 宿主 config.json，与应用随机端口无关）
 - 浏览器通用 Token 获取：书签一键复制 / 控制台代码 / 面板内粘贴保存（自动去引号，立即生效）
 - 累计（总）数据：费用取平台 `total_costs`，Token 逐月累加并跨月缓存
 - 本地用量代理（可选）：拦截 Anthropic 兼容请求，精确解析 SSE/JSON 用量并记账
@@ -54,10 +54,6 @@ dsh plugin --profile web add github:moyuer233/dsh-deepseek-monitor
 配置面板（开关 + 拖拽排序）
 
 ![config](screenshots/config-panel.png)
-
-「用量」标签页（详情）
-
-![tab](screenshots/tab.png)
 
 侧边栏底部（竖排）
 
@@ -75,7 +71,7 @@ dsh plugin --profile web add github:moyuer233/dsh-deepseek-monitor
 
 ## 配置
 
-- 会话头部按日 / 月 / 总量显示 Token 与费用（余额另列）；面板每行左侧的 ≡ 手柄可拖动排序、开关控制显隐，同步作用于头部横排与侧边栏竖排；「用量」标签页始终展示完整详情
+- 会话头部按日 / 月 / 总量显示 Token 与费用（余额另列）；面板每行左侧的 ≡ 手柄可拖动排序、开关控制显隐，同步作用于头部横排与侧边栏竖排
 - 配置持久化：`~/.dsh/deepseek-monitor/config.json`（宿主，与应用端口无关）+ localStorage（会话内）
 - 界面语言：面板内可切换中文 / English（默认中文）
 
@@ -104,7 +100,7 @@ dsh plugin --profile web add github:moyuer233/dsh-deepseek-monitor
 ```bash
 node proxy.mjs       # 启动代理（默认 127.0.0.1:8899）
 node stats.mjs       # totals | today | recent [n] | live | balance
-node test/self-test.mjs   # 自测（内置 mock 上游，无需真实 Key）
+npm test             # 自测：代理 + 宿主采集 + 宿主路由（全内置 mock，无需真实 Key）
 ```
 
 接入 `@deepseek-ai/dsh-subagent-claude-code` 时，在 profile 补丁的 provider 行加：
@@ -129,6 +125,9 @@ node test/self-test.mjs   # 自测（内置 mock 上游，无需真实 Key）
 | `DS_MONITOR_LOG` | `~/.dsh/deepseek-monitor/usage.jsonl` | 代理记账文件 |
 | `DS_MONITOR_API_KEY` | 回退 `ANTHROPIC_AUTH_TOKEN`/`DEEPSEEK_API_KEY` | `stats balance` 用 |
 | `DS_PLATFORM_TOKEN` | 无 | 平台 token（也可写入 `~/.dsh/deepseek-monitor/platform-token`） |
+| `DS_MONITOR_TZ_OFFSET` | `8` | 记账时区偏移（小时）：平台按该时区切分「日」 |
+| `DS_MONITOR_TTL_MS` | `30000` | 宿主侧用量结果缓存时长（毫秒），`0` 关闭缓存 |
+| `DS_MONITOR_HISTORY_CONCURRENCY` | `6` | 历史月份并发拉取上限 |
 | `DS_PRICE_<MODEL>_IN/_CACHE_HIT/_OUT` | 内置默认表 | 单价覆盖（元/百万 token） |
 
 ## 定价（默认，可用 `DS_PRICE_*` 覆盖）
@@ -157,6 +156,17 @@ node test/self-test.mjs   # 自测（内置 mock 上游，无需真实 Key）
 - 平台内部接口非公开契约，可能随平台更新而变化
 
 ## 更新日志
+
+### 0.2.2
+
+- 修复「今日」按 UTC 取日期，导致北京时间 00:00–08:00 显示前一天数据的问题（时区可用 `DS_MONITOR_TZ_OFFSET` 调整）
+- 修复代理把带 query 的 `/v1/messages` 记成 `other`、该请求 token 与费用记 0 的问题
+- 修复记账日志里被 TCP 切断的多字节字符（中文错误信息）变成乱码的问题
+- 用量采集：宿主侧 30 秒缓存并合并并发请求，历史月份并发拉取，记账文件改为增量解析
+- 界面：多个展示位与多个标签页共用同一次采集，页面隐藏时暂停轮询
+- 宿主写接口（token / 配置）增加同源校验与 JSON 要求，配置只接受标量与字符串数组
+- 代理请求体加上限（32 MB）；`/dsm/usage` 补方法校验与错误处理
+- 文档：移除已不存在的「用量」标签页说明与截图
 
 ### 0.2.1
 

@@ -9,8 +9,8 @@ _✨ A DeepSeek Harness plugin: balance, token usage and cost at a glance ✨_
 [中文](README.md) | **English**
 
 DeepSeek usage monitor — a DeepSeek Harness (DSH) plugin: shows your DeepSeek
-platform balance, day/month/all-time token totals and costs in the session header,
-sidebar and a dedicated "Usage" tab, with drag-to-reorder and per-item toggles.
+platform balance, day/month/all-time token totals and costs in the session header
+and sidebar, with drag-to-reorder and per-item toggles.
 It also ships an optional local usage proxy that precisely meters Anthropic-compatible
 sub-agents (e.g. Claude Code).
 
@@ -20,7 +20,7 @@ sub-agents (e.g. Claude Code).
 
 ## Install (DSH plugin)
 
-Standard DSH bundle shape (the repo root is the plugin package — installable from npm, or from GitHub with one command). Current version `0.2.1`, npm package name `dsh-deepseek-monitor-moyuer233`.
+Standard DSH bundle shape (the repo root is the plugin package — installable from npm, or from GitHub with one command). Current version `0.2.2`, npm package name `dsh-deepseek-monitor-moyuer233`.
 
 ```bash
 # Install from npm (recommended)
@@ -42,8 +42,8 @@ The command installs this repo as a dependency of the profile (`~/.dsh/profiles/
 ## Features
 
 - Session-header segments: balance / day tokens / month tokens / day cost / month cost / all-time cost / total tokens — each independently toggleable, ≡ drag to reorder
-- Three placements: session header (horizontal), sidebar footer (vertical), "Usage" view tab (details)
-- 60s auto refresh; config persisted via dual channels (localStorage + host `config.json`, independent of the app's random port)
+- Two placements: session header (horizontal) and sidebar footer (vertical); click a segment or ⚙ for the full detail panel and settings
+- 60s auto refresh (paused while the page is hidden; every placement and tab shares one fetch); config persisted via dual channels (localStorage + host `config.json`, independent of the app's random port)
 - Browser-agnostic token setup: one-click bookmarklet / console snippet / paste-and-save in the panel (quotes auto-stripped, takes effect immediately)
 - All-time totals: cost from the platform `total_costs`, tokens summed month by month with cross-month caching
 - Local usage proxy (optional): intercepts Anthropic-compatible requests and parses SSE/JSON usage precisely
@@ -57,10 +57,6 @@ Session header (horizontal segments)
 Config panel (toggles + drag to reorder)
 
 ![config](screenshots/config-panel-en.png)
-
-"Usage" tab (details)
-
-![tab](screenshots/tab-en.png)
 
 Sidebar footer (vertical stack)
 
@@ -81,7 +77,7 @@ Saving goes through the host `POST /dsm/token` and atomically writes `~/.dsh/dee
 
 - The session header shows tokens/costs grouped by day / month / total (balance listed separately);
   drag the ≡ handle in the panel to reorder, toggles control visibility —
-  applied to both the header row and the sidebar stack; the "Usage" tab always shows full details
+  applied to both the header row and the sidebar stack
 - Config persists to `~/.dsh/deepseek-monitor/config.json` (host-side, port-independent) + localStorage (per session)
 - Language: switch 中文 / English in the panel (default: 中文)
 
@@ -110,7 +106,7 @@ client ──▶ proxy (127.0.0.1:8899) ──▶ https://api.deepseek.com/anthr
 ```bash
 node proxy.mjs       # start the proxy (default 127.0.0.1:8899)
 node stats.mjs       # totals | today | recent [n] | live | balance
-node test/self-test.mjs   # self-test (built-in mock upstream, no real key needed)
+npm test             # self-test: proxy + host collector + host routes (built-in mocks, no real key)
 ```
 
 When wiring up `@deepseek-ai/dsh-subagent-claude-code`, add to the provider row in the profile patch:
@@ -135,6 +131,9 @@ When wiring up `@deepseek-ai/dsh-subagent-claude-code`, add to the provider row 
 | `DS_MONITOR_LOG` | `~/.dsh/deepseek-monitor/usage.jsonl` | proxy log file |
 | `DS_MONITOR_API_KEY` | falls back to `ANTHROPIC_AUTH_TOKEN`/`DEEPSEEK_API_KEY` | for `stats balance` |
 | `DS_PLATFORM_TOKEN` | none | platform token (or write `~/.dsh/deepseek-monitor/platform-token`) |
+| `DS_MONITOR_TZ_OFFSET` | `8` | bookkeeping timezone offset in hours; the platform buckets days by it |
+| `DS_MONITOR_TTL_MS` | `30000` | host-side usage result cache TTL in ms; `0` disables caching |
+| `DS_MONITOR_HISTORY_CONCURRENCY` | `6` | max concurrent history-month fetches |
 | `DS_PRICE_<MODEL>_IN/_CACHE_HIT/_OUT` | built-in table | price overrides (CNY per 1M tokens) |
 
 ## Pricing (defaults, overridable via `DS_PRICE_*`)
@@ -163,6 +162,17 @@ full input price, `cache_read_input_tokens` at the cache-hit price.
 - The platform's internal endpoints are not a public contract and may change
 
 ## Changelog
+
+### 0.2.2
+
+- Fixed "today" being computed from the UTC date, which showed the previous day's data between 00:00 and 08:00 Beijing time (timezone configurable via `DS_MONITOR_TZ_OFFSET`)
+- Fixed the proxy classifying `/v1/messages` requests that carry a query string as `other`, recording zero tokens and cost for them
+- Fixed multi-byte characters split across TCP chunks (Chinese error messages) being recorded as replacement-character garbage
+- Usage collection: 30s host-side cache merging concurrent requests, concurrent history-month fetches, and incremental parsing of the usage log
+- UI: every placement and tab shares one fetch; polling pauses while the page is hidden
+- Host write endpoints (token / config) now require same-origin JSON; config accepts only scalars and string arrays
+- Proxy request bodies are capped at 32 MB; `/dsm/usage` gained a method check and error handling
+- Docs: removed the description and screenshots of the "Usage" tab, which no longer exists
 
 ### 0.2.1
 
