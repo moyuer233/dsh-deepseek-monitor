@@ -12,19 +12,40 @@ process.env.DS_MONITOR_PORT = "0";
 
 // ── 1. mock 上游 ──────────────────────────────────────────────────────────
 
+/** mock 只按 pathname 分支、忽略 query（代理必须能把带 query 的请求照常记账）。 */
 const mock = http.createServer((req, res) => {
   req.resume();
-  if (req.method === "GET" && req.url === "/v1/models") {
+  const pathname = String(req.url ?? "").split("?")[0];
+  const query = new URL(req.url ?? "/", "http://x").searchParams;
+
+  if (req.method === "GET" && pathname === "/v1/models") {
     res.writeHead(200, { "content-type": "application/json" });
     res.end(JSON.stringify({ data: [{ id: "deepseek-chat" }] }));
     return;
   }
-  if (req.method === "POST" && req.url === "/v1/messages/count_tokens") {
+  if (req.method === "POST" && pathname === "/v1/messages/count_tokens") {
     res.writeHead(200, { "content-type": "application/json" });
     res.end(JSON.stringify({ input_tokens: 123 }));
     return;
   }
-  if (req.method === "POST" && req.url === "/v1/messages") {
+  // 中文错误事件，且故意把「余」这个多字节字符切成两次 TCP 写：
+  // 代理若按 chunk 各自 toString 就会得到 U+FFFD 乱码。
+  if (req.method === "POST" && pathname === "/v1/messages" && query.get("cn") === "1") {
+    res.writeHead(200, { "content-type": "text/event-stream" });
+    const sse = `event: error\ndata: ${JSON.stringify({
+      type: "error",
+      error: { message: "余额不足，请充值" },
+    })}\n\n`;
+    const buf = Buffer.from(sse, "utf8");
+    const cut = buf.indexOf(Buffer.from("余", "utf8")) + 1;
+    res.write(buf.subarray(0, cut));
+    setTimeout(() => {
+      res.write(buf.subarray(cut));
+      res.end();
+    }, 50);
+    return;
+  }
+  if (req.method === "POST" && pathname === "/v1/messages") {
     if (String(req.headers.accept ?? "").includes("text/event-stream")) {
       res.writeHead(200, { "content-type": "text/event-stream" });
       const events = [
@@ -59,7 +80,7 @@ process.env.DS_MONITOR_UPSTREAM = `http://127.0.0.1:${mockPort}`;
 
 // ── 2. 启动代理（指向 mock）───────────────────────────────────────────────
 
-const { createProxyServer, LOG_FILE } = await import("../proxy.mjs");
+const { createProxyServer, kindFor, LOG_FILE } = await import("../proxy.mjs");
 const proxy = createProxyServer();
 await new Promise((r) => proxy.listen(0, "127.0.0.1", r));
 const proxyPort = proxy.address().port;
@@ -77,6 +98,11 @@ const check = (name, cond, extra = "") => {
 };
 
 console.log(`\n[dsh-deepseek-monitor] self-test (proxy :${proxyPort} → mock :${mockPort})`);
+
+// 3.0 kindFor 必须忽略 query（回归：曾把 /v1/messages?x=1 判成 "other"）
+check("kindFor 忽略 query", kindFor("/v1/messages?beta=true") === "messages");
+check("kindFor count_tokens 带 query", kindFor("/v1/messages/count_tokens?x=1") === "count_tokens");
+check("kindFor 未知路径", kindFor("/v1/other?x=1") === "other");
 
 // 3.1 流式 messages
 const sseRes = await fetch(`${base}/v1/messages`, {
@@ -114,12 +140,28 @@ check("models 转发", modelsBody.data[0].id === "deepseek-chat");
 const health = await (await fetch(`${base}/healthz`)).json();
 check("healthz 存活", health.ok === true);
 
+// 3.6 带 query 的流式 messages（用不同 model 定位这条记录）
+const qRes = await fetch(`${base}/v1/messages?beta=true`, {
+  method: "POST",
+  headers: { "content-type": "application/json", accept: "text/event-stream" },
+  body: JSON.stringify({ model: "deepseek-reasoner", max_tokens: 64, messages: [{ role: "user", content: "hi" }] }),
+});
+await qRes.text();
+
+// 3.7 多字节字符被 TCP 切断的错误事件
+const cnRes = await fetch(`${base}/v1/messages?cn=1`, {
+  method: "POST",
+  headers: { "content-type": "application/json", accept: "text/event-stream" },
+  body: JSON.stringify({ model: "deepseek-chat", max_tokens: 8, messages: [{ role: "user", content: "hi" }] }),
+});
+await cnRes.text();
+
 // ── 4. 校验记账 ───────────────────────────────────────────────────────────
 
 const records = JSON.parse(`[${fs.readFileSync(logFile, "utf8").trim().split("\n").join(",")}]`);
-check("共 4 条记账记录", records.length === 4, `got ${records.length}`);
+check("共 6 条记账记录", records.length === 6, `got ${records.length}`);
 
-const sse = records.find((r) => r.kind === "messages" && r.streaming);
+const sse = records.find((r) => r.kind === "messages" && r.streaming && r.model === "deepseek-chat");
 check("流式记录：input=1000", sse?.inputTokens === 1000, JSON.stringify(sse));
 check("流式记录：cache_creation=200", sse?.cacheCreation === 200);
 check("流式记录：cache_read=300", sse?.cacheRead === 300);
@@ -138,6 +180,16 @@ check("count_tokens 记录：input=123", ct?.inputTokens === 123);
 
 const models = records.find((r) => r.kind === "models");
 check("models 记录：无 token", models && (models.inputTokens ?? 0) === 0);
+
+// 回归 1：带 query 的请求必须仍按 messages 记账并解析出 usage
+const q = records.find((r) => r.model === "deepseek-reasoner");
+check("带 query：kind=messages", q?.kind === "messages", `got ${q?.kind}`);
+check("带 query：仍解析出 input=1000", q?.inputTokens === 1000, `got ${q?.inputTokens}`);
+
+// 回归 2：被 TCP 切断的多字节字符必须原样还原，不能出现 U+FFFD
+const cn = records.find((r) => r.error);
+check("多字节切断：错误文本无损", cn?.error === "余额不足，请充值", JSON.stringify(cn?.error));
+check("多字节切断：无替换字符", !String(cn?.error ?? "").includes("\uFFFD"));
 
 // ── 5. 清理（等 close 回调结束再退出，避免 Windows 上 libuv 断言）───────
 

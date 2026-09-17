@@ -20,6 +20,8 @@
 import http from "node:http";
 import https from "node:https";
 import { randomUUID } from "node:crypto";
+import { StringDecoder } from "node:string_decoder";
+import { pathToFileURL } from "node:url";
 import { appendRecord, defaultLogPath } from "./lib/logger.mjs";
 import { modelPricing, computeCost } from "./lib/pricing.mjs";
 
@@ -28,11 +30,17 @@ const HOST = process.env.DS_MONITOR_HOST ?? "127.0.0.1";
 const PORT = Number(process.env.DS_MONITOR_PORT ?? 8899);
 const LOG_FILE = defaultLogPath();
 
+/** 转发前缓冲的请求体上限，防止单个超大请求把代理内存吃满。 */
+const MAX_BODY_BYTES = 32 * 1024 * 1024;
+
 const STARTED_AT = new Date().toISOString();
 
 // ── SSE 事件解析器：从流式响应中抽取 usage ────────────────────────────────
 
 function createSseExtractor(onEvent) {
+  // 用 StringDecoder 承接被 chunk 切断的多字节字符，否则含中文的
+  // content_block_delta 行会变成乱码，JSON.parse 失败被静默丢掉。
+  const decoder = new StringDecoder("utf8");
   let buffer = "";
   let eventType = null;
   const handleDataLine = (data) => {
@@ -44,25 +52,30 @@ function createSseExtractor(onEvent) {
       /* 非 JSON 数据行忽略 */
     }
   };
+  const drain = () => {
+    let idx;
+    while ((idx = buffer.indexOf("\n")) !== -1) {
+      const line = buffer.slice(0, idx).replace(/\r$/, "");
+      buffer = buffer.slice(idx + 1);
+      if (line === "") {
+        eventType = null;
+        continue;
+      }
+      if (line.startsWith("event:")) {
+        eventType = line.slice(6).trim();
+      } else if (line.startsWith("data:")) {
+        handleDataLine(line.slice(5));
+      }
+    }
+  };
   return {
     push(chunk) {
-      buffer += chunk;
-      let idx;
-      while ((idx = buffer.indexOf("\n")) !== -1) {
-        const line = buffer.slice(0, idx).replace(/\r$/, "");
-        buffer = buffer.slice(idx + 1);
-        if (line === "") {
-          eventType = null;
-          continue;
-        }
-        if (line.startsWith("event:")) {
-          eventType = line.slice(6).trim();
-        } else if (line.startsWith("data:")) {
-          handleDataLine(line.slice(5));
-        }
-      }
+      buffer += typeof chunk === "string" ? chunk : decoder.write(chunk);
+      drain();
     },
     end() {
+      buffer += decoder.end();
+      drain();
       if (buffer.trim()) handleDataLine(buffer);
       buffer = "";
     },
@@ -102,10 +115,18 @@ function extractUsageFromSse() {
 
 // ── 请求转发与记账 ─────────────────────────────────────────────────────────
 
-function kindFor(url) {
-  if (url === "/v1/messages") return "messages";
-  if (url === "/v1/messages/count_tokens") return "count_tokens";
-  if (url === "/v1/models") return "models";
+/** 只取 pathname 判类型：带 query（如 /v1/messages?beta=true）时不能退化成 "other"。 */
+function pathOf(rawUrl) {
+  const s = rawUrl ?? "/";
+  const q = s.indexOf("?");
+  return q === -1 ? s : s.slice(0, q);
+}
+
+function kindFor(rawUrl) {
+  const pathname = pathOf(rawUrl);
+  if (pathname === "/v1/messages") return "messages";
+  if (pathname === "/v1/messages/count_tokens") return "count_tokens";
+  if (pathname === "/v1/models") return "models";
   return "other";
 }
 
@@ -113,7 +134,8 @@ function createProxyServer() {
   const transport = new URL(UPSTREAM).protocol === "https:" ? https : http;
 
   return http.createServer((req, res) => {
-    if (req.method === "GET" && (req.url === "/" || req.url === "/healthz")) {
+    const pathname = pathOf(req.url);
+    if (req.method === "GET" && (pathname === "/" || pathname === "/healthz")) {
       res.writeHead(200, { "content-type": "application/json; charset=utf-8" });
       res.end(JSON.stringify({ ok: true, upstream: UPSTREAM, log: LOG_FILE, startedAt: STARTED_AT }));
       return;
@@ -127,8 +149,34 @@ function createProxyServer() {
 
     // 收集请求体以读取 model（同时用于转发）
     const chunks = [];
-    req.on("data", (c) => chunks.push(c));
+    let bodyBytes = 0;
+    let bodyTooLarge = false;
+    req.on("data", (c) => {
+      if (bodyTooLarge) return;
+      bodyBytes += c.length;
+      if (bodyBytes > MAX_BODY_BYTES) {
+        bodyTooLarge = true;
+        chunks.length = 0;
+        return;
+      }
+      chunks.push(c);
+    });
     req.on("end", () => {
+      if (bodyTooLarge) {
+        record({
+          model: null,
+          status: 413,
+          usage: {},
+          error: "request body too large",
+          kind,
+          startedMs,
+          runId,
+          streaming,
+        });
+        res.writeHead(413, { "content-type": "text/plain; charset=utf-8" });
+        res.end("proxy: request body too large");
+        return;
+      }
       const body = Buffer.concat(chunks);
       let model = null;
       if (kind === "messages" || kind === "count_tokens") {
@@ -256,9 +304,8 @@ function main() {
 }
 
 const isDirectRun =
-  process.argv[1] &&
-  import.meta.url === new URL(`file://${process.argv[1].replace(/\\/g, "/")}`).href;
+  process.argv[1] !== undefined && import.meta.url === pathToFileURL(process.argv[1]).href;
 
 if (isDirectRun) main();
 
-export { createProxyServer, record, UPSTREAM, HOST, PORT, LOG_FILE };
+export { createProxyServer, record, kindFor, UPSTREAM, HOST, PORT, LOG_FILE };
