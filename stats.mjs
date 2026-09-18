@@ -21,7 +21,12 @@ import { zonedParts } from "./lib/service.mjs";
 const LOG_FILE = defaultLogPath();
 const BALANCE_URL = process.env.DS_MONITOR_BALANCE_URL ?? "https://api.deepseek.com/user/balance";
 
-const fmtCny = (n) => `¥${n.toFixed(2)}`;
+/** 记账字段读自磁盘上的 JSONL，可能是字符串（手改过或旧版本写的）：一律先强制成数字。 */
+const num = (v) => {
+  const n = Number(v);
+  return Number.isFinite(n) ? n : 0;
+};
+const fmtCny = (n) => `¥${num(n).toFixed(2)}`;
 const fmtTokens = (n) =>
   n >= 1e9 ? `${(n / 1e9).toFixed(2)}B` : n >= 1e6 ? `${(n / 1e6).toFixed(2)}M` : n >= 1e3 ? `${(n / 1e3).toFixed(1)}K` : String(n);
 
@@ -45,11 +50,11 @@ function summarize(records) {
   for (const r of records) {
     if (r.kind !== "messages" && r.kind !== "count_tokens") continue;
     totals.requests += 1;
-    totals.inputTokens += r.inputTokens ?? 0;
-    totals.outputTokens += r.outputTokens ?? 0;
-    totals.cacheCreation += r.cacheCreation ?? 0;
-    totals.cacheRead += r.cacheRead ?? 0;
-    totals.costCny += r.totalCostCny ?? 0;
+    totals.inputTokens += num(r.inputTokens);
+    totals.outputTokens += num(r.outputTokens);
+    totals.cacheCreation += num(r.cacheCreation);
+    totals.cacheRead += num(r.cacheRead);
+    totals.costCny += num(r.totalCostCny);
     if (r.status >= 400 || r.error) totals.failed += 1;
     const key = r.model ?? "(unknown)";
     if (!byModel.has(key)) {
@@ -64,11 +69,11 @@ function summarize(records) {
     }
     const m = byModel.get(key);
     m.requests += 1;
-    m.inputTokens += r.inputTokens ?? 0;
-    m.outputTokens += r.outputTokens ?? 0;
-    m.cacheCreation += r.cacheCreation ?? 0;
-    m.cacheRead += r.cacheRead ?? 0;
-    m.costCny += r.totalCostCny ?? 0;
+    m.inputTokens += num(r.inputTokens);
+    m.outputTokens += num(r.outputTokens);
+    m.cacheCreation += num(r.cacheCreation);
+    m.cacheRead += num(r.cacheRead);
+    m.costCny += num(r.totalCostCny);
   }
   return { totals, byModel };
 }
@@ -117,7 +122,7 @@ function cmdRecent(n) {
   if (records.length === 0) return;
   for (const r of records) {
     const ok = r.status >= 200 && r.status < 400 && !r.error;
-    const cost = (r.totalCostCny ?? 0).toFixed(4);
+    const cost = num(r.totalCostCny).toFixed(4);
     console.log(
       `${r.ts} ${ok ? "ok" : "FAIL"} ${r.status} ${r.kind}${r.streaming ? " (sse)" : ""} model=${r.model ?? "-"} ` +
         `in=${fmtTokens(r.inputTokens ?? 0)} out=${fmtTokens(r.outputTokens ?? 0)} cache+${fmtTokens(r.cacheCreation ?? 0)}/read${fmtTokens(r.cacheRead ?? 0)} ¥${cost} ${r.durationMs ?? 0}ms${r.error ? ` err=${r.error}` : ""}`
@@ -136,18 +141,26 @@ function cmdLive() {
       if (size > position) {
         const fd = fs.openSync(LOG_FILE, "r");
         const buf = Buffer.alloc(size - position);
-        fs.readSync(fd, buf, 0, buf.length, position);
+        const read = fs.readSync(fd, buf, 0, buf.length, position);
         fs.closeSync(fd);
-        position = size;
-        for (const line of buf.toString("utf8").split("\n")) {
-          if (!line.trim()) continue;
-          try {
-            const r = JSON.parse(line);
-            console.log(
-              `${r.ts} ${r.status} ${r.kind} model=${r.model ?? "-"} in=${fmtTokens(r.inputTokens ?? 0)} out=${fmtTokens(r.outputTokens ?? 0)} ¥${(r.totalCostCny ?? 0).toFixed(4)} ${r.durationMs ?? 0}ms`
-            );
-          } catch {
-            /* 忽略 */
+        const text = buf.toString("utf8", 0, read);
+        // 只消费到最后一个换行，尾部没写完的半行留给下一轮。
+        // 若像以前那样先把 position 推到 size，这半行会被 JSON.parse 失败静默吞掉、
+        // 而游标已经越过它 ⇒ 那条记录永久丢失（实测复现过）。
+        const lastNewline = text.lastIndexOf("\n");
+        if (lastNewline >= 0) {
+          const complete = text.slice(0, lastNewline);
+          position += Buffer.byteLength(complete, "utf8") + 1; // +1 = "\n"
+          for (const line of complete.split("\n")) {
+            if (!line.trim()) continue;
+            try {
+              const r = JSON.parse(line);
+              console.log(
+                `${r.ts} ${r.status} ${r.kind} model=${r.model ?? "-"} in=${fmtTokens(num(r.inputTokens))} out=${fmtTokens(num(r.outputTokens))} ¥${num(r.totalCostCny).toFixed(4)} ${r.durationMs ?? 0}ms`
+              );
+            } catch {
+              /* 忽略坏行 */
+            }
           }
         }
       }
