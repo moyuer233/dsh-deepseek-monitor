@@ -24,6 +24,8 @@ process.env.DS_PLATFORM_TOKEN_FILE = tokenFile;
 process.env.DS_MONITOR_LOG = logFile;
 process.env.DS_MONITOR_CONFIG = path.join(tmp, "config.json");
 process.env.DS_MONITOR_CACHE = path.join(tmp, "cache.json");
+// 把记账文件上限压到 1 字节，好在用例里触发一次轮转（logger.mjs 在加载时读取该值）
+process.env.DS_MONITOR_LOG_MAX_BYTES = "1";
 // 固定一个不可能有代理的端口，保证 localEnabled 断言确定
 process.env.DS_MONITOR_PORT = "1";
 process.env.DS_MONITOR_HOST = "127.0.0.1";
@@ -53,8 +55,21 @@ const dayEntry = (date, usage, cost) => ({
 
 // ── mock 平台 API ──────────────────────────────────────────────────────────
 
+// 由用例控制：让某一个历史月份报错，用于验证它不会连坐其余数据
+let failHistoryMonth = null;
+
 const mock = http.createServer((req, res) => {
   const url = new URL(req.url, "http://x");
+  // 故障注入放最前：writeHead 只能调一次，放到下面分支里会 ERR_HTTP_HEADERS_SENT
+  if (failHistoryMonth && url.pathname === "/api/v0/usage/amount") {
+    const mo = Number(url.searchParams.get("month"));
+    const yr = Number(url.searchParams.get("year"));
+    if (mo === failHistoryMonth.month && yr === failHistoryMonth.year) {
+      res.writeHead(500, { "content-type": "application/json" });
+      res.end(JSON.stringify({ code: 1, msg: "history month unavailable" }));
+      return;
+    }
+  }
   res.writeHead(200, { "content-type": "application/json" });
   const wrap = (bizData) => JSON.stringify({ code: 0, data: { biz_code: 0, biz_data: bizData } });
   if (url.pathname === "/api/v0/users/get_user_summary") {
@@ -204,6 +219,59 @@ fs.writeFileSync(
 );
 const s5 = readLocalStats();
 check("增量：文件截断后从头重算", s5.records === 1 && s5.inputTokens === 7, JSON.stringify(s5));
+
+// ── 单个历史月份失败不应连坐其余数据 ─────────────────────────────────────
+// 累计 token 要逐月回填历史（几十个月），其中任何一个月出错都不该让整份响应
+// 变成 FETCH_FAILED、把余额与今日数据一起丢掉。
+resetResidentState();
+fs.rmSync(path.join(tmp, "cache.json"), { force: true }); // 清历史缓存，强制真的回拉历史
+const prevMonth = currentMonth === 1 ? 12 : currentMonth - 1;
+const prevYear = currentMonth === 1 ? currentYear - 1 : currentYear;
+failHistoryMonth = { year: prevYear, month: prevMonth };
+const partial = await collect({ force: true });
+failHistoryMonth = null;
+check("单月失败：整体仍 ok", partial.ok === true, `ok=${partial.ok} error=${partial.error}`);
+check("单月失败：余额仍在", partial.summary?.balance === 12.34, JSON.stringify(partial.summary));
+check("单月失败：今日数据仍在", partial.today?.total === 2000, JSON.stringify(partial.today));
+check("单月失败：alltime 置 null（UI 显示「—」而非假 0）", partial.alltime === null, JSON.stringify(partial.alltime));
+check(
+  "单月失败：带 alltimeError 供排查",
+  typeof partial.alltimeError === "string" && partial.alltimeError.length > 0,
+  JSON.stringify(partial.alltimeError)
+);
+
+// ── 日志轮转：轮转出去的那一代仍要计入统计 ───────────────────────────────
+const { appendRecord, readRecords } = await import("../lib/logger.mjs");
+const rotLog = path.join(tmp, "rotate.jsonl");
+fs.writeFileSync(rotLog, JSON.stringify({ kind: "messages", inputTokens: 5, outputTokens: 0, totalCostCny: 0 }) + "\n", "utf8");
+appendRecord(rotLog, { kind: "messages", inputTokens: 7, outputTokens: 0, totalCostCny: 0 });
+check("轮转：生成了 .1 那一代", fs.existsSync(`${rotLog}.1`));
+const rotRecords = readRecords(rotLog);
+check("轮转：readRecords 两代都读到", rotRecords.length === 2, `got ${rotRecords.length}`);
+
+// ── DS_MONITOR_TTL_MS 传非法值要回退默认，而不是静默关掉缓存 ─────────────
+// 常量在模块加载时求值，所以只能在独立进程里验证。
+const { spawn } = await import("node:child_process");
+const ttlFor = (val) =>
+  new Promise((resolve) => {
+    const env = { ...process.env };
+    delete env.DS_MONITOR_TTL_MS;
+    if (val !== undefined) env.DS_MONITOR_TTL_MS = val;
+    const child = spawn(
+      process.execPath,
+      ["--input-type=module", "-e", "const m = await import('./lib/service.mjs'); console.log(m.USAGE_TTL_MS);"],
+      { cwd: path.resolve(import.meta.dirname, ".."), env, stdio: ["ignore", "pipe", "pipe"] }
+    );
+    let out = "";
+    child.stdout.on("data", (d) => { out += d.toString(); });
+    child.on("close", () => resolve(out.trim()));
+  });
+const ttlUnset = await ttlFor(undefined);
+const ttlZero = await ttlFor("0");
+const ttlBad = await ttlFor("abc");
+check("TTL 未设置 → 30000", ttlUnset === "30000", ttlUnset);
+check("TTL=0 → 0（显式关缓存，属正常）", ttlZero === "0", ttlZero);
+check("TTL=abc（非法）→ 回退 30000", ttlBad === "30000", ttlBad);
 
 mock.closeAllConnections?.();
 mock.close();
