@@ -100,6 +100,12 @@ const postUsage = await call("/dsm/usage", { method: "POST" });
 check("POST /dsm/usage → 405", postUsage.status === 405, String(postUsage.status));
 const delToken = await call("/dsm/token", { method: "DELETE" });
 check("DELETE /dsm/token → 405", delToken.status === 405, String(delToken.status));
+const headUsage = await call("/dsm/usage", { method: "HEAD" });
+check(
+  "HEAD /dsm/usage → 200 且不回响应体（不为探测打平台接口）",
+  headUsage.status === 200 && headUsage.json === null,
+  `${headUsage.status} body=${JSON.stringify(headUsage.json)}`
+);
 
 // ── 跨站写请求（CSRF）────────────────────────────────────────────────────
 const crossSite = await call("/dsm/config", {
@@ -115,6 +121,28 @@ const badOrigin = await call("/dsm/token", {
 });
 check("异源 Origin POST /dsm/token → 403", badOrigin.status === 403, String(badOrigin.status));
 check("被拒的写请求没有落盘", !fs.existsSync(path.join(tmp, "platform-token")));
+
+// ── DNS rebinding：Origin 与 Host 同为攻击者域名 ─────────────────────────
+// 浏览器在 rebinding 后会把这种请求算成"同源"，所以 sec-fetch-site / Origin
+// 都会自洽 —— 只有 Host 还带着攻击者域名。这条断言就是真正的防线回归：
+// 只校验 Origin 时它会返回 200 并把配置真的改写掉。
+const rebound = await call("/dsm/config", {
+  method: "POST",
+  headers: {
+    ...JSON_CT,
+    "sec-fetch-site": "same-origin",
+    origin: "http://evil.example:1234",
+    host: "evil.example:1234",
+  },
+  body: JSON.stringify({ balance: false, lang: "pwned" }),
+});
+check("rebinding 形态 POST /dsm/config → 403", rebound.status === 403, String(rebound.status));
+check("rebinding 时配置未被改写", !fs.existsSync(path.join(tmp, "config.json")));
+const reboundRead = await call("/dsm/usage", {
+  method: "GET",
+  headers: { host: "evil.example:1234" },
+});
+check("rebinding 形态 GET /dsm/usage → 403", reboundRead.status === 403, String(reboundRead.status));
 
 // ── 强制 application/json（挡掉表单式「简单请求」）───────────────────────
 const formPost = await call("/dsm/config", {
