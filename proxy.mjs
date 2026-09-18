@@ -145,7 +145,31 @@ function createProxyServer() {
     const startedMs = Date.now();
     const kind = kindFor(req.url);
     const streaming = String(req.headers.accept ?? "").includes("text/event-stream");
-    const target = new URL(UPSTREAM + req.url);
+
+    // 一个请求只记一笔账：流式 / 非流式 / 上游出错 / 客户端断开这几条路径可能先后触发，
+    // 谁先到谁写，既避免重复记录，也避免断开那条路径漏记。
+    let recorded = false;
+    let streamTrack = null;
+    let upstreamRes = null;
+    const recordOnce = (fields) => {
+      if (recorded) return;
+      recorded = true;
+      record(fields);
+    };
+
+    // 「上游前缀 + 客户端可控的 req.url」未必拼得出合法 URL：当前缀带端口且没有路径时
+    // （例如 DS_MONITOR_UPSTREAM=http://127.0.0.1:8899），遇到 absolute-form 请求目标
+    // （GET http://host/x）或 `OPTIONS *` 会让端口后接上非数字字符而抛 Invalid URL。
+    // 这个回调里抛异常就是未捕获异常 = 代理进程退出，所以必须在此拦下。
+    let target;
+    try {
+      target = new URL(UPSTREAM + req.url);
+    } catch {
+      recordOnce({ model: null, status: 400, usage: {}, error: "invalid request target", kind, startedMs, runId, streaming });
+      res.writeHead(400, { "content-type": "text/plain; charset=utf-8" });
+      res.end("proxy: invalid request target");
+      return;
+    }
 
     // 收集请求体以读取 model（同时用于转发）
     const chunks = [];
@@ -163,7 +187,7 @@ function createProxyServer() {
     });
     req.on("end", () => {
       if (bodyTooLarge) {
-        record({
+        recordOnce({
           model: null,
           status: 413,
           usage: {},
@@ -201,10 +225,12 @@ function createProxyServer() {
         { method: req.method, headers: upstreamHeaders },
         (upRes) => {
           const status = upRes.statusCode ?? 502;
+          upstreamRes = upRes;
 
           if (streaming && kind === "messages") {
             // 流式：边转发边解析 usage
             const track = extractUsageFromSse();
+            streamTrack = track;
             res.writeHead(status, {
               "content-type": upRes.headers["content-type"] ?? "text/event-stream",
               "cache-control": upRes.headers["cache-control"] ?? "no-cache",
@@ -215,11 +241,11 @@ function createProxyServer() {
             });
             upRes.on("end", () => {
               track.extractor.end();
-              record({ model, status, usage: track.usage, error: track.error, kind, startedMs, runId, streaming: true });
+              recordOnce({ model, status, usage: track.usage, error: track.error, kind, startedMs, runId, streaming: true });
               res.end();
             });
             upRes.on("error", (e) => {
-              record({ model, status: 502, usage: {}, error: e.message, kind, startedMs, runId, streaming: true });
+              recordOnce({ model, status: 502, usage: {}, error: e.message, kind, startedMs, runId, streaming: true });
               res.destroy();
             });
             return;
@@ -240,7 +266,7 @@ function createProxyServer() {
             } catch {
               /* 非 JSON（例如纯文本错误页），原样转发 */
             }
-            record({ model, status, usage, error, kind, startedMs, runId, streaming: false });
+            recordOnce({ model, status, usage, error, kind, startedMs, runId, streaming: false });
             const headers = { ...upRes.headers };
             delete headers["transfer-encoding"];
             headers["content-length"] = String(outBody.length);
@@ -248,7 +274,7 @@ function createProxyServer() {
             res.end(outBody);
           });
           upRes.on("error", (e) => {
-            record({ model, status: 502, usage: {}, error: e.message, kind, startedMs, runId, streaming: false });
+            recordOnce({ model, status: 502, usage: {}, error: e.message, kind, startedMs, runId, streaming: false });
             if (!res.headersSent) res.writeHead(502, { "content-type": "text/plain; charset=utf-8" });
             res.end(`proxy upstream error: ${e.message}`);
           });
@@ -256,7 +282,7 @@ function createProxyServer() {
       );
 
       upstreamReq.on("error", (e) => {
-        record({ model, status: 502, usage: {}, error: e.message, kind, startedMs, runId, streaming });
+        recordOnce({ model, status: 502, usage: {}, error: e.message, kind, startedMs, runId, streaming });
         if (!res.headersSent) res.writeHead(502, { "content-type": "text/plain; charset=utf-8" });
         res.end(`proxy upstream error: ${e.message}`);
       });
@@ -265,8 +291,22 @@ function createProxyServer() {
       upstreamReq.end();
 
       // 客户端真正断开（而非请求体读完）时才终止上游；正常完成后 writableEnded 为 true。
+      // 断开这条路径之后不会再有任何 end/error 回调，必须在这里补记账，
+      // 否则这段已消耗的 token 完全不计入（流式断开时用已解析到的部分 usage）。
       res.on("close", () => {
-        if (!res.writableEnded) upstreamReq.destroy();
+        if (res.writableEnded) return;
+        recordOnce({
+          model,
+          status: 499,
+          usage: streamTrack ? streamTrack.usage : {},
+          error: "client disconnected",
+          kind,
+          startedMs,
+          runId,
+          streaming,
+        });
+        upstreamReq.destroy();
+        if (upstreamRes) upstreamRes.destroy();
       });
     });
   });

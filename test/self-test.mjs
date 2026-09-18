@@ -2,6 +2,7 @@
 // 运行：node test/self-test.mjs
 
 import http from "node:http";
+import net from "node:net";
 import os from "node:os";
 import path from "node:path";
 import fs from "node:fs";
@@ -156,10 +157,33 @@ const cnRes = await fetch(`${base}/v1/messages?cn=1`, {
 });
 await cnRes.text();
 
+// 3.8 畸形请求目标：回归「未捕获 Invalid URL 让代理进程退出」
+// 本测试的上游是 http://127.0.0.1:<port>（带端口、无路径），而 absolute-form 目标
+// 会让端口后接上非数字字符 ⇒ new URL(UPSTREAM + req.url) 抛异常。
+// 回调里抛异常就是进程级未捕获异常，所以这条必须回 400 且代理继续存活。
+const rawReply = await new Promise((resolve) => {
+  const s = net.connect(proxyPort, "127.0.0.1", () => {
+    s.write("GET http://evil.example/x HTTP/1.1\r\nHost: evil.example\r\n\r\n");
+  });
+  let out = "";
+  s.on("data", (d) => { out += d.toString(); });
+  s.on("close", () => resolve(out.split("\r\n")[0]));
+  s.on("error", (e) => resolve("socket error: " + e.message));
+  setTimeout(() => {
+    try { s.destroy(); } catch { /* ignore */ }
+    resolve(out.split("\r\n")[0] || "(timeout)");
+  }, 1500);
+});
+check("畸形请求目标 → 400（不是进程崩溃）", rawReply.includes("400"), rawReply);
+const healthAfter = await (await fetch(`${base}/healthz`)).json();
+check("畸形请求之后代理仍存活", healthAfter.ok === true);
+
 // ── 4. 校验记账 ───────────────────────────────────────────────────────────
 
 const records = JSON.parse(`[${fs.readFileSync(logFile, "utf8").trim().split("\n").join(",")}]`);
-check("共 6 条记账记录", records.length === 6, `got ${records.length}`);
+check("共 7 条记账记录（含畸形请求那条 400）", records.length === 7, `got ${records.length}`);
+const badTarget = records.find((r) => r.error === "invalid request target");
+check("畸形请求被记为 400", badTarget?.status === 400, JSON.stringify(badTarget));
 
 const sse = records.find((r) => r.kind === "messages" && r.streaming && r.model === "deepseek-chat");
 check("流式记录：input=1000", sse?.inputTokens === 1000, JSON.stringify(sse));
