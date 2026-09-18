@@ -20,7 +20,7 @@ sub-agents (e.g. Claude Code).
 
 ## Install (DSH plugin)
 
-Standard DSH bundle shape (the repo root is the plugin package — installable from npm, or from GitHub with one command). Current version `0.2.2`, npm package name `dsh-deepseek-monitor-moyuer233`.
+Standard DSH bundle shape (the repo root is the plugin package — installable from npm, or from GitHub with one command). Current version `0.2.3`, npm package name `dsh-deepseek-monitor-moyuer233`.
 
 ```bash
 # Install from npm (recommended)
@@ -129,6 +129,8 @@ When wiring up `@deepseek-ai/dsh-subagent-claude-code`, add to the provider row 
 | `DS_MONITOR_HOST` | `127.0.0.1` | listen address |
 | `DS_MONITOR_UPSTREAM` | `https://api.deepseek.com/anthropic` | upstream endpoint |
 | `DS_MONITOR_LOG` | `~/.dsh/deepseek-monitor/usage.jsonl` | proxy log file |
+| `DS_MONITOR_LOG_MAX_BYTES` | `33554432` (32 MB) | log size cap; the file rotates to `.1` past it |
+| `DS_MONITOR_ALLOWED_HOSTS` | loopback names and IP literals only | extra `Host` values allowed to reach the host routes (comma-separated); `*` disables the check |
 | `DS_MONITOR_API_KEY` | falls back to `ANTHROPIC_AUTH_TOKEN`/`DEEPSEEK_API_KEY` | for `stats balance` |
 | `DS_PLATFORM_TOKEN` | none | platform token (or write `~/.dsh/deepseek-monitor/platform-token`) |
 | `DS_MONITOR_TZ_OFFSET` | `8` | bookkeeping timezone offset in hours; the platform buckets days by it |
@@ -162,6 +164,18 @@ full input price, `cache_read_input_tokens` at the cache-hit price.
 - The platform's internal endpoints are not a public contract and may change
 
 ## Changelog
+
+### 0.2.3
+
+- Security: all three host routes now validate `Host` (loopback names and IP literals only). Previously only `Origin` / `Sec-Fetch-Site` were checked, and DNS rebinding makes both of those look same-origin, so an attacker page could rewrite the config or read usage. Use `DS_MONITOR_ALLOWED_HOSTS` when reaching DSH through a domain or reverse proxy
+- Fixed the proxy throwing an uncaught exception — and exiting — on malformed request targets (absolute-form, `OPTIONS *`) when the upstream is configured as "host with port, no path"
+- Fixed a single failing history month dragging down balance / today / month into a failed response; the all-time part now degrades on its own, the UI shows "—", and the payload carries `alltimeError`
+- Fixed `stats.mjs live` swallowing a partially written line together with its cursor, losing that record forever
+- Fixed `stats.mjs` crashing on string-valued log fields
+- The proxy now records a request when the client disconnects mid-flight (previously that spent usage was never counted)
+- The usage log is size-capped and rotates one generation (`DS_MONITOR_LOG_MAX_BYTES`, default 32 MB); `stats` counts both generations
+- UI: requests now time out after 20s, so a stalled host can no longer freeze refreshing forever; nested ternaries removed
+- An invalid `DS_MONITOR_TTL_MS` now falls back to the default instead of silently disabling the cache
 
 ### 0.2.2
 

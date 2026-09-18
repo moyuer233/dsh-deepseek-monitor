@@ -17,7 +17,7 @@ DeepSeek 平台的余额、日/月/累计 Token 总量与费用，支持拖拽�
 
 ## 安装
 
-标准 DSH bundle 格式（根包即插件，既可从 npm 安装，也可从 GitHub 一条命令安装）。当前版本 `0.2.2`，npm 包名 `dsh-deepseek-monitor-moyuer233`。
+标准 DSH bundle 格式（根包即插件，既可从 npm 安装，也可从 GitHub 一条命令安装）。当前版本 `0.2.3`，npm 包名 `dsh-deepseek-monitor-moyuer233`。
 
 ```bash
 # 从 npm 安装（推荐）
@@ -123,6 +123,8 @@ npm test             # 自测：代理 + 宿主采集 + 宿主路由（全内置
 | `DS_MONITOR_HOST` | `127.0.0.1` | 监听地址 |
 | `DS_MONITOR_UPSTREAM` | `https://api.deepseek.com/anthropic` | 上游端点 |
 | `DS_MONITOR_LOG` | `~/.dsh/deepseek-monitor/usage.jsonl` | 代理记账文件 |
+| `DS_MONITOR_LOG_MAX_BYTES` | `33554432`（32 MB） | 记账文件上限，超过就轮转出一代 `.1` |
+| `DS_MONITOR_ALLOWED_HOSTS` | 仅回环名与 IP 字面量 | 额外允许访问宿主路由的 Host（逗号分隔），`*` 关闭校验 |
 | `DS_MONITOR_API_KEY` | 回退 `ANTHROPIC_AUTH_TOKEN`/`DEEPSEEK_API_KEY` | `stats balance` 用 |
 | `DS_PLATFORM_TOKEN` | 无 | 平台 token（也可写入 `~/.dsh/deepseek-monitor/platform-token`） |
 | `DS_MONITOR_TZ_OFFSET` | `8` | 记账时区偏移（小时）：平台按该时区切分「日」 |
@@ -156,6 +158,18 @@ npm test             # 自测：代理 + 宿主采集 + 宿主路由（全内置
 - 平台内部接口非公开契约，可能随平台更新而变化
 
 ## 更新日志
+
+### 0.2.3
+
+- 安全：三条宿主路由改为校验 Host（只放行回环名与 IP 字面量）—— 此前只校验 Origin / Sec-Fetch-Site，而 DNS rebinding 下这两个信号都由浏览器算成"同源"，可被用来改写配置或读取用量。经域名或反向代理访问时用 `DS_MONITOR_ALLOWED_HOSTS` 放行
+- 修复代理遇到畸形请求目标（absolute-form、`OPTIONS *`，且上游配成"带端口无路径"）抛未捕获异常、整个代理进程退出的问题
+- 修复单个历史月份拉取失败会连坐余额 / 今日 / 本月数据、整份响应变成失败的问题；累计部分独立降级，界面显示「—」并在响应里带 `alltimeError`
+- 修复 `stats.mjs live` 把跨轮询被截断的半行连游标一起吃掉、该记录永久丢失的问题
+- 修复 `stats.mjs` 遇到字符串型记账字段直接崩溃的问题
+- 代理在客户端中途断开时补记一笔账（此前这段已消耗的 token 完全不计入）
+- 记账文件加上限并轮转一代（`DS_MONITOR_LOG_MAX_BYTES`，默认 32 MB），`stats` 两代都统计
+- 界面：请求加 20 秒超时，避免宿主"接了连接却不回"导致刷新永久停住；去掉嵌套三元
+- `DS_MONITOR_TTL_MS` 传非法值时回退默认，不再静默关掉缓存
 
 ### 0.2.2
 
