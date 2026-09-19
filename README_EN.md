@@ -20,7 +20,7 @@ sub-agents (e.g. Claude Code).
 
 ## Install (DSH plugin)
 
-Standard DSH bundle shape (the repo root is the plugin package — installable from npm, or from GitHub with one command). Current version `0.2.3`, npm package name `dsh-deepseek-monitor-moyuer233`.
+Standard DSH bundle shape (the repo root is the plugin package — installable from npm, or from GitHub with one command). Current version `0.2.4`, npm package name `dsh-deepseek-monitor-moyuer233`.
 
 ```bash
 # Install from npm (recommended)
@@ -45,7 +45,8 @@ The command installs this repo as a dependency of the profile (`~/.dsh/profiles/
 - Two placements: session header (horizontal) and sidebar footer (vertical); click a segment or ⚙ for the full detail panel and settings
 - 60s auto refresh (paused while the page is hidden; every placement and tab shares one fetch); config persisted via dual channels (localStorage + host `config.json`, independent of the app's random port)
 - Browser-agnostic token setup: one-click bookmarklet / console snippet / paste-and-save in the panel (quotes auto-stripped, takes effect immediately)
-- All-time totals: cost from the platform `total_costs`, tokens summed month by month with cross-month caching
+- **Per-API-key filtering**: pick "all keys" or a single key in the panel — the same scope as the platform usage page's "API Key" dropdown (all keys by default)
+- All-time totals: tokens summed month by month with cross-month caching; cost comes from the account `total_costs` for "all keys", or is summed month by month for the selected key
 - Local usage proxy (optional): intercepts Anthropic-compatible requests and parses SSE/JSON usage precisely
 
 ## Preview
@@ -80,16 +81,23 @@ Saving goes through the host `POST /dsm/token` and atomically writes `~/.dsh/dee
   applied to both the header row and the sidebar stack
 - Config persists to `~/.dsh/deepseek-monitor/config.json` (host-side, port-independent) + localStorage (per session)
 - Language: switch 中文 / English in the panel (default: 中文)
+- API key: switch between "all keys" and a single key in the panel (same scope as the platform page; all keys by default)
 
 ## Data source (platform.deepseek.com internal API)
 
 | Endpoint | Content |
 |---|---|
-| `GET /api/v0/users/get_user_summary` | balance / bonus / all-time cost |
-| `GET /api/v0/usage/amount?month&year` | per-day token usage |
-| `GET /api/v0/usage/cost?month&year` | per-day cost |
+| `GET /api/v0/users/get_user_summary` | balance / bonus / all-time cost (account-level, no key dimension) |
+| `GET /api/v0/users/get_api_keys` | the account's API key list |
+| `GET /api/v0/usage/by_api_key/amount?start&end&tz` | per-key token usage (second-based window, day-aligned) |
+| `GET /api/v0/usage/by_api_key/cost?start&end&tz` | per-key cost |
 
 Auth is the platform login token (browser `userToken`, not an API key).
+
+> 0.2.3 and earlier used `/usage/amount` and `/usage/cost`: those are **account-level**, aggregated by
+> model, with **no key dimension**. With more than one key on the account they necessarily report more
+> than the platform page does after filtering to a single key — hence 0.2.4 switched to the `by_api_key`
+> pair and added a key selector to the panel.
 
 ## Local usage proxy (optional)
 
@@ -164,6 +172,13 @@ full input price, `cache_read_input_tokens` at the cache-hit price.
 - The platform's internal endpoints are not a public contract and may change
 
 ## Changelog
+
+### 0.2.4
+
+- Added per-API-key filtering: pick "all keys" or a single key in the panel, matching the platform usage page's "API Key" dropdown (all keys by default)
+- Switched the data endpoints to the `by_api_key` pair: `/usage/amount` and `/usage/cost` are account-level with no key dimension, so with multiple keys they necessarily reported more than the platform page does after filtering
+- All-time cost still comes from the account `total_costs` for "all keys"; for a selected key it is now summed month by month (the account summary has no key dimension)
+- The collection cache / single-flight key now includes the selected key, so switching keys fetches fresh data instead of reusing the previous key's numbers
 
 ### 0.2.3
 

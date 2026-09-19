@@ -17,7 +17,7 @@ DeepSeek 平台的余额、日/月/累计 Token 总量与费用，支持拖拽�
 
 ## 安装
 
-标准 DSH bundle 格式（根包即插件，既可从 npm 安装，也可从 GitHub 一条命令安装）。当前版本 `0.2.3`，npm 包名 `dsh-deepseek-monitor-moyuer233`。
+标准 DSH bundle 格式（根包即插件，既可从 npm 安装，也可从 GitHub 一条命令安装）。当前版本 `0.2.4`，npm 包名 `dsh-deepseek-monitor-moyuer233`。
 
 ```bash
 # 从 npm 安装（推荐）
@@ -42,7 +42,8 @@ dsh plugin --profile web add github:moyuer233/dsh-deepseek-monitor
 - 两个展示位：会话头部（横排）与侧边栏底部（竖排）；点信息段或 ⚙ 弹出完整详情与配置面板
 - 60 秒自动刷新（页面隐藏时暂停；多个展示位与多个标签页共用同一次采集）；配置双通道持久化（localStorage + 宿主 config.json，与应用随机端口无关）
 - 浏览器通用 Token 获取：书签一键复制 / 控制台代码 / 面板内粘贴保存（自动去引号，立即生效）
-- 累计（总）数据：费用取平台 `total_costs`，Token 逐月累加并跨月缓存
+- **按 API Key 过滤**：面板里可切换「全部 Key」或某一个 Key，口径与平台用量页的「API Key」筛选一致（默认全部 Key）
+- 累计（总）数据：Token 逐月累加并跨月缓存；费用在「全部 Key」时取账户 `total_costs`，选中某个 Key 时按该 Key 逐月累加
 - 本地用量代理（可选）：拦截 Anthropic 兼容请求，精确解析 SSE/JSON 用量并记账
 
 ## 预览
@@ -74,16 +75,22 @@ dsh plugin --profile web add github:moyuer233/dsh-deepseek-monitor
 - 会话头部按日 / 月 / 总量显示 Token 与费用（余额另列）；面板每行左侧的 ≡ 手柄可拖动排序、开关控制显隐，同步作用于头部横排与侧边栏竖排
 - 配置持久化：`~/.dsh/deepseek-monitor/config.json`（宿主，与应用端口无关）+ localStorage（会话内）
 - 界面语言：面板内可切换中文 / English（默认中文）
+- API Key：面板内可切换「全部 Key」或某一个 Key（与平台用量页的「API Key」筛选同口径，默认全部 Key）
 
 ## 数据来源（platform.deepseek.com 内部 API）
 
 | 接口 | 内容 |
 |---|---|
-| `GET /api/v0/users/get_user_summary` | 余额 / 赠送 / 累计费用 |
-| `GET /api/v0/usage/amount?month&year` | 按天 token 用量 |
-| `GET /api/v0/usage/cost?month&year` | 按天费用 |
+| `GET /api/v0/users/get_user_summary` | 余额 / 赠送 / 累计费用（账户级，无 Key 维度） |
+| `GET /api/v0/users/get_api_keys` | 账户下的 API Key 列表 |
+| `GET /api/v0/usage/by_api_key/amount?start&end&tz` | 按 Key 的 token 用量（窗口为秒级、按日边界对齐） |
+| `GET /api/v0/usage/by_api_key/cost?start&end&tz` | 按 Key 的费用 |
 
 鉴权为平台登录 token（浏览器 `userToken`，非 API Key）。
+
+> 0.2.3 及更早用的是 `/usage/amount`、`/usage/cost`：那两个接口是**账户级**、按模型聚合、
+> **没有 Key 维度**。账户下有多个 Key 时，用它们算出的数字必然大于平台页面筛掉其它 Key 之后的值
+> —— 所以 0.2.4 起改用 `by_api_key` 这一对，并在面板里提供 Key 选择。
 
 ## 本地用量代理（可选）
 
@@ -158,6 +165,13 @@ npm test             # 自测：代理 + 宿主采集 + 宿主路由（全内置
 - 平台内部接口非公开契约，可能随平台更新而变化
 
 ## 更新日志
+
+### 0.2.4
+
+- 新增「API Key」筛选：面板里可切换「全部 Key」或某一个 Key，口径与平台用量页的「API Key」下拉一致（默认全部 Key）
+- 数据接口改用 `by_api_key` 系列：此前的 `/usage/amount`、`/usage/cost` 是账户级、没有 Key 维度，账户下有多个 Key 时算出的数字必然大于平台页面筛掉其它 Key 之后的值
+- 累计费用在「全部 Key」时仍取账户 `total_costs`；选中某个 Key 时改为按该 Key 逐月累加（账户汇总没有 Key 维度）
+- 采集缓存/单飞的键加入所选 Key，换 Key 会立刻拉新数据，而不是复用上一个 Key 的结果
 
 ### 0.2.3
 
