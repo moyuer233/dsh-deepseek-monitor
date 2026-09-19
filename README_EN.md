@@ -49,7 +49,7 @@ The command installs this repo as a dependency of the profile (`~/.dsh/profiles/
 - All-time totals: tokens summed month by month with cross-month caching; cost comes from the account `total_costs` for "all keys", or is summed month by month for the selected key
 - Local usage proxy (optional): intercepts Anthropic-compatible requests and parses SSE/JSON usage precisely
 - **Low-balance alert**: a popup once the balance drops below your threshold, with one click to the platform top-up page; both the threshold (default ¥5) and the reminder interval (default 6 hours) are editable in the panel, and the whole thing can be switched off
-- **Independent sidebar layout**: the sidebar keeps its own item set and order, decoupled from the header; configure it in the panel with switches + ↑/↓, or long-press a row in the sidebar and drag it
+- **Independent sidebar layout**: the sidebar keeps its own item set and order, decoupled from the header; the panel's switches control visibility, and the order is set by long-pressing a row in the sidebar and dragging it
 
 ## Preview
 
@@ -88,8 +88,8 @@ Saving goes through the host `POST /dsm/token` and atomically writes `~/.dsh/dee
 
 - The session header shows tokens/costs grouped by day / month / total (balance listed separately);
   **long-press a segment and drag it** to change the order, while the switches in the panel only control visibility
-- The sidebar stack is configured **on its own**: use the switches + ↑/↓ under "Sidebar items", or long-press a row
-  in the sidebar and drag it — neither changes the header
+- The sidebar stack is configured **on its own**: the switches under "Sidebar items" control visibility, and
+  long-pressing a row in the sidebar and dragging it sets the order — neither touches the header
 - Config persists to `~/.dsh/deepseek-monitor/config.json` (host-side, port-independent) + localStorage (per session)
 - Language: switch 中文 / English in the panel (default: 中文)
 - API key: switch between "all keys" and a single key in the panel (same scope as the platform page; all keys by default)
@@ -194,7 +194,7 @@ full input price, `cache_read_input_tokens` at the cache-hit price.
 - Session-header segments can be reordered by dragging them directly: long-press for 250 ms to pick one up, the order updates live while dragging (WYSIWYG), and it is saved on release; the config panel no longer reorders via the `≡` handle and only keeps the visibility switches
 - Added the "low balance" alert: a popup when the balance drops below your threshold, with one click to the platform top-up page; both the threshold (default ¥5) and the reminder interval (default 6 hours) are editable in the panel, and the alert can be switched off entirely; the muted state is kept locally and clears automatically once the balance recovers
 - The config panel now caps its height and scrolls (`min(78vh, 760px)`), so the "Platform token" section at the bottom no longer drops below the window
-- The sidebar is now configured **independently**: its item set and order are decoupled from the header (switches + ↑/↓ in the panel, or long-press and drag a row in the sidebar); existing configs are derived from the header, so nothing changes on upgrade
+- The sidebar is now configured **independently**: its item set and order are decoupled from the header (the panel's switches control visibility, and the order comes from long-press-dragging a row in the sidebar); existing configs are derived from the header, so nothing changes on upgrade
 
 ### 0.2.3
 
