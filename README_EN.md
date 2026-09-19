@@ -10,7 +10,7 @@ _✨ A DeepSeek Harness plugin: balance, token usage and cost at a glance ✨_
 
 DeepSeek usage monitor — a DeepSeek Harness (DSH) plugin: shows your DeepSeek
 platform balance, day/month/all-time token totals and costs in the session header
-and sidebar, with drag-to-reorder and per-item toggles.
+and sidebar, with long-press drag-to-reorder and per-item toggles.
 It also ships an optional local usage proxy that precisely meters Anthropic-compatible
 sub-agents (e.g. Claude Code).
 
@@ -41,13 +41,14 @@ The command installs this repo as a dependency of the profile (`~/.dsh/profiles/
 
 ## Features
 
-- Session-header segments: balance / day tokens / month tokens / day cost / month cost / all-time cost / total tokens — each independently toggleable, ≡ drag to reorder
+- Session-header segments: balance / day tokens / month tokens / day cost / month cost / all-time cost / total tokens — each independently toggleable; **long-press a segment to drag it into place**, and what you see while dragging is what you get
 - Two placements: session header (horizontal) and sidebar footer (vertical); click a segment or ⚙ for the full detail panel and settings
 - 60s auto refresh (paused while the page is hidden; every placement and tab shares one fetch); config persisted via dual channels (localStorage + host `config.json`, independent of the app's random port)
 - Browser-agnostic token setup: one-click bookmarklet / console snippet / paste-and-save in the panel (quotes auto-stripped, takes effect immediately)
 - **Per-API-key filtering**: pick "all keys" or a single key in the panel — the same scope as the platform usage page's "API Key" dropdown (all keys by default)
 - All-time totals: tokens summed month by month with cross-month caching; cost comes from the account `total_costs` for "all keys", or is summed month by month for the selected key
 - Local usage proxy (optional): intercepts Anthropic-compatible requests and parses SSE/JSON usage precisely
+- **Low-balance alert**: a popup once the balance drops below your threshold, with one click to the platform top-up page; both the threshold (default ¥5) and the reminder interval (default 6 hours) are editable in the panel, and the whole thing can be switched off
 
 ## Preview
 
@@ -55,13 +56,21 @@ Session header (horizontal segments)
 
 ![header](screenshots/header-en.png)
 
-Config panel (toggles + drag to reorder)
+Config panel (visibility toggles; reorder by dragging the segments themselves)
 
 ![config](screenshots/config-panel-en.png)
 
 Sidebar footer (vertical stack)
 
 ![sidebar](screenshots/sidebar-en.png)
+
+Long-press a segment and drag it to reorder (live preview while dragging)
+
+![drag](screenshots/drag-en.png)
+
+Low-balance alert (one click opens the platform top-up page)
+
+![alert](screenshots/alert-en.png)
 
 ## Getting the platform token (works in any browser: Edge / Chrome / desktop)
 
@@ -77,7 +86,8 @@ Saving goes through the host `POST /dsm/token` and atomically writes `~/.dsh/dee
 ## Config
 
 - The session header shows tokens/costs grouped by day / month / total (balance listed separately);
-  drag the ≡ handle in the panel to reorder, toggles control visibility —
+  **long-press a segment and drag it** to change the order (the sidebar stack follows the same order),
+  while the switches in the panel only control visibility —
   applied to both the header row and the sidebar stack
 - Config persists to `~/.dsh/deepseek-monitor/config.json` (host-side, port-independent) + localStorage (per session)
 - Language: switch 中文 / English in the panel (default: 中文)
@@ -179,6 +189,10 @@ full input price, `cache_read_input_tokens` at the cache-hit price.
 - Switched the data endpoints to the `by_api_key` pair: `/usage/amount` and `/usage/cost` are account-level with no key dimension, so with multiple keys they necessarily reported more than the platform page does after filtering
 - All-time cost still comes from the account `total_costs` for "all keys"; for a selected key it is now summed month by month (the account summary has no key dimension)
 - The collection cache / single-flight key now includes the selected key, so switching keys fetches fresh data instead of reusing the previous key's numbers
+- Fixed "today" always reading 0: it used to be derived from the account-level monthly response by picking the current day's bucket, and that endpoint does not expose a usable day bucket; it now uses the `by_api_key` day window (`end` computed the platform's own way — midnight after the last day) and matches the platform page
+- Session-header segments can be reordered by dragging them directly: long-press for 250 ms to pick one up, the order updates live while dragging (WYSIWYG), and it is saved on release; the config panel no longer reorders via the `≡` handle and only keeps the visibility switches
+- Added the "low balance" alert: a popup when the balance drops below your threshold, with one click to the platform top-up page; both the threshold (default ¥5) and the reminder interval (default 6 hours) are editable in the panel, and the alert can be switched off entirely; the muted state is kept locally and clears automatically once the balance recovers
+- The config panel now caps its height and scrolls (`min(78vh, 760px)`), so the "Platform token" section at the bottom no longer drops below the window
 
 ### 0.2.3
 

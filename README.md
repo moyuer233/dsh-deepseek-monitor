@@ -9,7 +9,7 @@ _✨ DeepSeek Harness 插件：余额、Token 用量与费用实时可见 ✨_
 **中文** | [English](README_EN.md)
 
 DeepSeek 用量监控 —— DeepSeek Harness (DSH) 插件：在会话头部与侧边栏实时显示
-DeepSeek 平台的余额、日/月/累计 Token 总量与费用，支持拖拽排序与开关配置；另附一个本地用量代理，
+DeepSeek 平台的余额、日/月/累计 Token 总量与费用，支持长按拖动排序与开关配置；另附一个本地用量代理，
 为走 Anthropic 兼容协议的子代理（如 Claude Code）精确记账。
 
 > 本插件使用 platform.deepseek.com Web 端内部接口（非公开契约）查询你自己的账户数据，仅限个人使用；
@@ -38,13 +38,14 @@ dsh plugin --profile web add github:moyuer233/dsh-deepseek-monitor
 
 ## 功能
 
-- 会话头部横排信息段：余额 / 日 Token / 月 Token / 日费用 / 月费用 / 总费用 / Token 总量，每段独立开关、可通过 ≡ 手柄拖拽排序
+- 会话头部横排信息段：余额 / 日 Token / 月 Token / 日费用 / 月费用 / 总费用 / Token 总量，每段独立开关；**长按显示块即可拖动排序**，拖动过程中看到的顺序就是松手后的顺序
 - 两个展示位：会话头部（横排）与侧边栏底部（竖排）；点信息段或 ⚙ 弹出完整详情与配置面板
 - 60 秒自动刷新（页面隐藏时暂停；多个展示位与多个标签页共用同一次采集）；配置双通道持久化（localStorage + 宿主 config.json，与应用随机端口无关）
 - 浏览器通用 Token 获取：书签一键复制 / 控制台代码 / 面板内粘贴保存（自动去引号，立即生效）
 - **按 API Key 过滤**：面板里可切换「全部 Key」或某一个 Key，口径与平台用量页的「API Key」筛选一致（默认全部 Key）
 - 累计（总）数据：Token 逐月累加并跨月缓存；费用在「全部 Key」时取账户 `total_costs`，选中某个 Key 时按该 Key 逐月累加
 - 本地用量代理（可选）：拦截 Anthropic 兼容请求，精确解析 SSE/JSON 用量并记账
+- **余额不足提醒**：余额低于阈值时弹窗，点「去充值」跳平台充值页；阈值（默认 ¥5）与提醒间隔（默认 6 小时）都能在面板里改，也能整个关掉
 
 ## 预览
 
@@ -52,13 +53,21 @@ dsh plugin --profile web add github:moyuer233/dsh-deepseek-monitor
 
 ![header](screenshots/header.png)
 
-配置面板（开关 + 拖拽排序）
+配置面板（显示开关；排序改到会话头部直接拖）
 
 ![config](screenshots/config-panel.png)
 
 侧边栏底部（竖排）
 
 ![sidebar](screenshots/sidebar.png)
+
+长按显示块拖动排序（拖动中即时预览）
+
+![drag](screenshots/drag.png)
+
+余额不足提醒（点「去充值」跳转平台充值页）
+
+![alert](screenshots/alert.png)
 
 ## 获取平台 Token（浏览器通用，Edge/Chrome/桌面端均可）
 
@@ -72,7 +81,7 @@ dsh plugin --profile web add github:moyuer233/dsh-deepseek-monitor
 
 ## 配置
 
-- 会话头部按日 / 月 / 总量显示 Token 与费用（余额另列）；面板每行左侧的 ≡ 手柄可拖动排序、开关控制显隐，同步作用于头部横排与侧边栏竖排
+- 会话头部按日 / 月 / 总量显示 Token 与费用（余额另列）；**长按显示块拖动**即可调整顺序（侧边栏竖排跟随同一份顺序），面板内的开关只控制显隐
 - 配置持久化：`~/.dsh/deepseek-monitor/config.json`（宿主，与应用端口无关）+ localStorage（会话内）
 - 界面语言：面板内可切换中文 / English（默认中文）
 - API Key：面板内可切换「全部 Key」或某一个 Key（与平台用量页的「API Key」筛选同口径，默认全部 Key）
@@ -172,6 +181,10 @@ npm test             # 自测：代理 + 宿主采集 + 宿主路由（全内置
 - 数据接口改用 `by_api_key` 系列：此前的 `/usage/amount`、`/usage/cost` 是账户级、没有 Key 维度，账户下有多个 Key 时算出的数字必然大于平台页面筛掉其它 Key 之后的值
 - 累计费用在「全部 Key」时仍取账户 `total_costs`；选中某个 Key 时改为按该 Key 逐月累加（账户汇总没有 Key 维度）
 - 采集缓存/单飞的键加入所选 Key，换 Key 会立刻拉新数据，而不是复用上一个 Key 的结果
+- 修复「今日」恒为 0：此前今日数据是从账户级月度响应里筛"当天那个桶"得到的，账户级接口并不提供当天的可用分桶；改用 `by_api_key` 的当日窗口（`end` 按平台自身算法取"结束日次日零点"）后与平台页面一致
+- 会话头部的显示块可直接拖动排序：长按 250 ms 进入拖动，拖动中顺序即时重排（所见即所得），松手落盘；配置面板不再用 `≡` 手柄排序，只保留显示开关
+- 新增「余额不足提醒」：余额低于阈值时弹窗，点「去充值」跳平台充值页；阈值（默认 ¥5）与提醒间隔（默认 6 小时）都能在面板里改，也能整个关掉；静默状态只存本地，余额回升到阈值以上自动解除
+- 配置面板加了限高滚动（`min(78vh, 760px)`）：内容变长后，底部「平台 Token」区不再掉出窗口点不到
 
 ### 0.2.3
 
