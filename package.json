@@ -1,7 +1,7 @@
 {
   "name": "dsh-deepseek-monitor-moyuer233",
   "version": "0.2.4",
-  "description": "DeepSeek usage monitor as a DeepSeek Harness (DSH) plugin: balance / day-month-all-time token & cost panels in the chat UI with drag-reorder config, plus an optional local usage proxy",
+  "description": "DeepSeek usage monitor as a DeepSeek Harness (DSH) plugin: balance / day-month-all-time token & cost panels in the chat UI with long-press drag-reorder, plus an optional local usage proxy",
   "type": "module",
   "private": false,
   "main": "lib/index.js",
@@ -33,9 +33,16 @@
   "engines": {
     "node": ">=18"
   },
+  "files": [
+    "lib",
+    "proxy.mjs",
+    "stats.mjs",
+    "cordis.patch.yml",
+    "README_EN.md"
+  ],
   "scripts": {
     "start": "node proxy.mjs",
-    "test": "node test/self-test.mjs && node test/service-test.mjs && node test/host-test.mjs && node test/stats-test.mjs"
+    "test": "node test/self-test.mjs && node test/service-test.mjs && node test/host-test.mjs && node test/stats-test.mjs && node test/client-test.mjs"
   },
   "license": "MIT"
 }
