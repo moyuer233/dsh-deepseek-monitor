@@ -148,5 +148,36 @@ eq("回升判据：余额 >= 阈值 为真", recovered(5, 5), true);
 eq("回升判据：余额 < 阈值 为假", recovered(4.99, 5), false);
 eq("回升判据：拿不到余额时视为已回升（只用于清静默记录）", recovered(null, 5), true);
 
+// ── 侧边栏独立配置：老配置按头部推导，新配置用自己的一套 ─────────────────────
+const itemsOf = mod.__sidebarItemsOf;
+const orderOf = mod.__sidebarOrderOf;
+const migrate = mod.__migrateCfg;
+
+eq("无 sidebarItems：按头部开关推导", itemsOf({ order: ["a", "b", "c"], a: true, b: false, c: true }), ["a", "c"]);
+eq("有 sidebarItems：原样返回", itemsOf({ sidebarItems: ["b"] }), ["b"]);
+eq("无 sidebarOrder：跟随头部顺序", orderOf({ order: ["a", "b"] }), ["a", "b"]);
+eq("有 sidebarOrder：用侧边栏自己的", orderOf({ order: ["a", "b"], sidebarOrder: ["b", "a"] }), ["b", "a"]);
+eq("空 sidebarOrder：回退头部顺序", orderOf({ order: ["a"], sidebarOrder: [] }), ["a"]);
+
+const migrated = migrate({ order: ["balance", "dayTokens"], balance: true, dayTokens: false });
+eq("迁移：sidebarItems 继承头部开关", migrated.sidebarItems, ["balance"]);
+eq("迁移：sidebarOrder 继承头部顺序", migrated.sidebarOrder, ["balance", "dayTokens"]);
+eq(
+  "迁移：显式空 sidebarItems 不被当成未配置",
+  migrate({ order: ["balance"], balance: true, sidebarItems: [] }).sidebarItems,
+  []
+);
+eq(
+  "迁移：sidebarItems 里的未知键被剔除",
+  migrate({ order: ["balance"], balance: true, sidebarItems: ["balance", "nope"] }).sidebarItems,
+  ["balance"]
+);
+eq("迁移：sidebarOrder 里的未知键被剔除", migrate({ sidebarOrder: ["balance", "nope"] }).sidebarOrder, ["balance"]);
+eq(
+  "迁移：侧边栏开关独立，不动头部开关",
+  migrate({ order: ["balance"], balance: true, sidebarItems: [] }).balance,
+  true
+);
+
 console.log(failures === 0 ? "[OK] client 自检通过" : `[FAIL] ${failures} 项`);
 process.exit(failures);
