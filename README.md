@@ -103,7 +103,7 @@ dsh plugin --profile web add github:moyuer233/dsh-deepseek-monitor
 | `GET /api/v0/usage/by_api_key/amount?start&end&tz` | 按 Key 的 token 用量（窗口为秒级、按日边界对齐） |
 | `GET /api/v0/usage/by_api_key/cost?start&end&tz` | 按 Key 的费用 |
 
-鉴权为平台登录 token（浏览器 `userToken`，非 API Key）。
+鉴权：DSH 账号登录态（请求头 `x-dsh-auth-token`），或手填的平台 token（`Authorization: Bearer`）；两者都不是 API Key。
 
 > 0.2.3 及更早用的是 `/usage/amount`、`/usage/cost`：那两个接口是**账户级**、按模型聚合、
 > **没有 Key 维度**。账户下有多个 Key 时，用它们算出的数字必然大于平台页面筛掉其它 Key 之后的值

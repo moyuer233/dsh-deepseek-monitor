@@ -109,7 +109,7 @@ Signing in, signing out or changing the token invalidates the usage cache immedi
 | `GET /api/v0/usage/by_api_key/amount?start&end&tz` | per-key token usage (second-based window, day-aligned) |
 | `GET /api/v0/usage/by_api_key/cost?start&end&tz` | per-key cost |
 
-Auth is the platform login token (browser `userToken`, not an API key).
+Auth: the DSH account session (`x-dsh-auth-token`) or a manually pasted platform token (`Authorization: Bearer`); neither is an API key.
 
 > 0.2.3 and earlier used `/usage/amount` and `/usage/cost`: those are **account-level**, aggregated by
 > model, with **no key dimension**. With more than one key on the account they necessarily report more
