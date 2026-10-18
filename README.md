@@ -17,7 +17,7 @@ DeepSeek 平台的余额、日/月/累计 Token 总量与费用，支持长按�
 
 ## 安装
 
-标准 DSH bundle 格式（根包即插件，既可从 npm 安装，也可从 GitHub 一条命令安装）。当前版本 `0.2.4`，npm 包名 `dsh-deepseek-monitor-moyuer233`。
+标准 DSH bundle 格式（根包即插件，既可从 npm 安装，也可从 GitHub 一条命令安装）。当前版本 `0.3.0`，npm 包名 `dsh-deepseek-monitor-moyuer233`。
 
 ```bash
 # 从 npm 安装（推荐）
@@ -41,7 +41,7 @@ dsh plugin --profile web add github:moyuer233/dsh-deepseek-monitor
 - 会话头部横排信息段：余额 / 日 Token / 月 Token / 日费用 / 月费用 / 总费用 / Token 总量，每段独立开关；**长按显示块即可拖动排序**，拖动过程中看到的顺序就是松手后的顺序
 - 两个展示位：会话头部（横排）与侧边栏底部（竖排）；点信息段或 ⚙ 弹出完整详情与配置面板
 - 60 秒自动刷新（页面隐藏时暂停；多个展示位与多个标签页共用同一次采集）；配置双通道持久化（localStorage + 宿主 config.json，与应用随机端口无关）
-- 浏览器通用 Token 获取：书签一键复制 / 控制台代码 / 面板内粘贴保存（自动去引号，立即生效）
+- **默认零配置**：直接复用 DSH 的 DeepSeek 账号登录态；未登录时可在面板「高级」里手动填 token 兜底
 - **按 API Key 过滤**：面板里可切换「全部 Key」或某一个 Key，口径与平台用量页的「API Key」筛选一致（默认全部 Key）
 - 累计（总）数据：Token 逐月累加并跨月缓存；费用在「全部 Key」时取账户 `total_costs`，选中某个 Key 时按该 Key 逐月累加
 - 本地用量代理（可选）：拦截 Anthropic 兼容请求，精确解析 SSE/JSON 用量并记账
@@ -70,15 +70,21 @@ dsh plugin --profile web add github:moyuer233/dsh-deepseek-monitor
 
 ![alert](screenshots/alert.png)
 
-## 获取平台 Token（浏览器通用，Edge/Chrome/桌面端均可）
+## 平台 Token（默认零配置）
 
-1. 打开配置面板 → 「平台 Token」区
-2. 点「打开平台页面」并登录
-3. 把「获取 Token」链接拖到浏览器书签栏；之后登录平台页时点一下书签即自动复制 Token
-   （备选：复制书签链接手动建书签，或复制控制台代码在 F12 里执行）
-4. 回到面板粘贴（自动去引号）→ 保存，立即生效，无需重启
+**在 DSH 里登录 DeepSeek 账号（设置 → 账号）即可，插件自动复用登录态，不用再抓 token。**
 
-保存走宿主 `POST /dsm/token` 原子写入 `~/.dsh/deepseek-monitor/platform-token`。
+凭据来源按顺序取第一个可用的：
+
+1. `DS_PLATFORM_TOKEN` 环境变量（脚本 / 临时换号）
+2. DSH 账号登录态（读取账号服务的 `getPlatformSession()`，请求头 `x-dsh-auth-token`）
+3. 手动填写的 token（面板 →「高级：手动填 token」，走 `Authorization: Bearer`）
+
+手动填写出现在三种情况：没登录、想用别的账号、或平台换了接口导致账号态不可用。
+抓 token 的老办法仍在「高级」里：打开平台页 → 书签/控制台代码复制 `userToken` → 粘贴保存
+（保存走宿主 `POST /dsm/token` 原子写入 `~/.dsh/deepseek-monitor/platform-token`）。
+
+账号登录 / 退出 / 换 token 都会让用量缓存立刻作废，下一轮自动用新的凭据重算。
 
 ## 配置
 
@@ -144,7 +150,7 @@ npm test             # 自测：代理 + 宿主采集 + 宿主路由（全内置
 | `DS_MONITOR_LOG_MAX_BYTES` | `33554432`（32 MB） | 记账文件上限，超过就轮转出一代 `.1` |
 | `DS_MONITOR_ALLOWED_HOSTS` | 仅回环名与 IP 字面量 | 额外允许访问宿主路由的 Host（逗号分隔），`*` 关闭校验 |
 | `DS_MONITOR_API_KEY` | 回退 `ANTHROPIC_AUTH_TOKEN`/`DEEPSEEK_API_KEY` | `stats balance` 用 |
-| `DS_PLATFORM_TOKEN` | 无 | 平台 token（也可写入 `~/.dsh/deepseek-monitor/platform-token`） |
+| `DS_PLATFORM_TOKEN` | 无 | 手动指定平台 token，优先于 DSH 账号登录态 |
 | `DS_MONITOR_TZ_OFFSET` | `8` | 记账时区偏移（小时）：平台按该时区切分「日」 |
 | `DS_MONITOR_TTL_MS` | `30000` | 宿主侧用量结果缓存时长（毫秒），`0` 关闭缓存 |
 | `DS_MONITOR_HISTORY_CONCURRENCY` | `6` | 历史月份并发拉取上限 |
@@ -176,6 +182,14 @@ npm test             # 自测：代理 + 宿主采集 + 宿主路由（全内置
 - 平台内部接口非公开契约，可能随平台更新而变化
 
 ## 更新日志
+
+### 0.3.0
+
+- **零配置**：默认复用 DSH 的 DeepSeek 账号登录态，不再需要去浏览器抓 `userToken`；登录 / 退出 / 换账号后用量缓存自动作废
+- 鉴权双模式：账号登录态走平台请求头 `x-dsh-auth-token`，手填 token 仍走 `Authorization: Bearer`
+- 面板「平台 Token」区改为显示来源（已通过 DSH 账号登录 / 正在使用手动 Token / 未登录）；未登录时直接给出手填框，书签与抓取入口收进「高级」
+- 只读账号服务的公开方法 `getPlatformSession()`，不直接读 `~/.dsh/.credentials.yaml`
+- 手动 token 文件、`DS_PLATFORM_TOKEN`、`DS_MONITOR_*` 环境变量全部保留，升级无需任何操作
 
 ### 0.2.4
 

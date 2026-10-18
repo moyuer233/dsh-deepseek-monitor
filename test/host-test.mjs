@@ -33,8 +33,8 @@ apply({
 });
 
 /** 构造假的 req/res 调一次 handler。`url` 可与路由路径不同（测 query）。 */
-function call(routePath, { method = "GET", url, body = "", headers = {} } = {}) {
-  const handler = routes.get(routePath);
+function call(routePath, { method = "GET", url, body = "", headers = {} } = {}, routeMap = routes) {
+  const handler = routeMap.get(routePath);
   if (!handler) throw new Error(`route not registered: ${routePath}`);
   const req = Readable.from(body === "" ? [] : [Buffer.from(body, "utf8")]);
   req.method = method;
@@ -84,6 +84,7 @@ const cfgGet = await call("/dsm/config", { method: "GET" });
 check("GET /dsm/config 可读", cfgGet.status === 200 && cfgGet.json?.ok === true, `${cfgGet.status}`);
 const tokenGet = await call("/dsm/token", { method: "GET" });
 check("GET /dsm/token 可读", tokenGet.status === 200 && tokenGet.json?.hasToken === false);
+check("GET /dsm/token 报告来源 = none", tokenGet.json?.source === "none", JSON.stringify(tokenGet.json));
 const usageGet = await call("/dsm/usage", { method: "GET" });
 check(
   "GET /dsm/usage 无 token → 200 + NO_TOKEN",
@@ -190,6 +191,59 @@ check("同源 JSON POST /dsm/token → 200", okToken.status === 200 && okToken.j
 check("token 已落盘且去掉空白", fs.readFileSync(path.join(tmp, "platform-token"), "utf8") === "tok-abc");
 const tokenGet2 = await call("/dsm/token", { method: "GET" });
 check("GET /dsm/token 反映已保存", tokenGet2.json?.hasToken === true);
+check("GET /dsm/token 手填后来源 = manual", tokenGet2.json?.source === "manual", JSON.stringify(tokenGet2.json));
+
+// ── 账号服务：来源判定（不联网，只看 GET /dsm/token）──────────────────
+function applyWithAccount(session) {
+  const table = new Map();
+  apply({
+    effect: (fn) => fn(),
+    on: () => {},
+    get: (name) =>
+      name === "deepseekAccount"
+        ? { getPlatformSession: async () => session }
+        : undefined,
+    webServer: {
+      register: ({ path: p, handler }) => {
+        table.set(p, handler);
+        return () => {};
+      },
+    },
+  });
+  return table;
+}
+
+const accountRoutes = applyWithAccount({
+  origin: "https://platform.deepseek.com",
+  token: "acc-token",
+  requestHeaders: { "x-client-platform": "desktop-win" },
+});
+const accountToken = await call("/dsm/token", {}, accountRoutes);
+check(
+  "账号登录态 → 来源 = account",
+  accountToken.json?.source === "account" && accountToken.json?.hasToken === true,
+  JSON.stringify(accountToken.json)
+);
+
+const evilRoutes = applyWithAccount({
+  origin: "https://evil.example",
+  token: "acc-token",
+  requestHeaders: {},
+});
+const evilToken = await call("/dsm/token", {}, evilRoutes);
+check(
+  "非官方 origin 的 token 不被采用（回落手填）",
+  evilToken.json?.source === "manual",
+  JSON.stringify(evilToken.json)
+);
+
+const signedOutRoutes = applyWithAccount(null);
+const signedOutToken = await call("/dsm/token", {}, signedOutRoutes);
+check(
+  "账号服务返回 null（已退出）→ 回落手填",
+  signedOutToken.json?.source === "manual",
+  JSON.stringify(signedOutToken.json)
+);
 
 fs.rmSync(tmp, { recursive: true, force: true });
 

@@ -68,7 +68,9 @@ const tokOf = (p) => p.hit + p.miss + p.resp;
 // 由用例控制：让某一个历史月份报错，验证它不会连坐其余数据
 let failHistoryMonth = null;
 
+let lastAuth = null;
 const mock = http.createServer((req, res) => {
+  lastAuth = req.headers;
   const url = new URL(req.url, "http://x");
   const start = Number(url.searchParams.get("start"));
   const json = (o) => {
@@ -206,6 +208,24 @@ check("单月失败：余额仍在", partial.summary?.balance === 12.34, JSON.st
 check("单月失败：今日数据仍在", partial.today?.total === expTodayAll, JSON.stringify(partial.today));
 check("单月失败：alltime 置 null（UI 显示「—」而非假 0）", partial.alltime === null, JSON.stringify(partial.alltime));
 check("单月失败：带 alltimeError 供排查", typeof partial.alltimeError === "string" && partial.alltimeError.length > 0, JSON.stringify(partial.alltimeError));
+
+// ── 4.5 鉴权来源：DSH 账号登录态走 x-dsh-auth-token，手填仍走 Bearer ──
+resetResidentState();
+lastAuth = null;
+const accountData = await collect({
+  force: true,
+  auth: { mode: "account", token: "acc-grant", headers: { "x-client-platform": "desktop-win" } },
+});
+check("账号登录态采集 ok", accountData.ok === true, JSON.stringify(accountData).slice(0, 160));
+check("账号登录态用 x-dsh-auth-token", lastAuth?.["x-dsh-auth-token"] === "acc-grant", JSON.stringify(lastAuth?.["x-dsh-auth-token"]));
+check("账号登录态不带 Authorization", lastAuth?.authorization === undefined, String(lastAuth?.authorization));
+check("账号态的部署请求头被透传", lastAuth?.["x-client-platform"] === "desktop-win", JSON.stringify(lastAuth?.["x-client-platform"]));
+resetResidentState();
+lastAuth = null;
+const manualData = await collect({ force: true });
+check("手填 token 仍走 Bearer", String(lastAuth?.authorization ?? "").startsWith("Bearer "), String(lastAuth?.authorization));
+check("手填 token 不带 x-dsh-auth-token", lastAuth?.["x-dsh-auth-token"] === undefined, JSON.stringify(lastAuth?.["x-dsh-auth-token"]));
+check("手填模式采集 ok", manualData.ok === true);
 
 // ── 5. 无 token 分支 ─────────────────────────────────────────────────────
 fs.rmSync(tokenFile, { force: true });

@@ -20,7 +20,7 @@ sub-agents (e.g. Claude Code).
 
 ## Install (DSH plugin)
 
-Standard DSH bundle shape (the repo root is the plugin package — installable from npm, or from GitHub with one command). Current version `0.2.4`, npm package name `dsh-deepseek-monitor-moyuer233`.
+Standard DSH bundle shape (the repo root is the plugin package — installable from npm, or from GitHub with one command). Current version `0.3.0`, npm package name `dsh-deepseek-monitor-moyuer233`.
 
 ```bash
 # Install from npm (recommended)
@@ -44,7 +44,7 @@ The command installs this repo as a dependency of the profile (`~/.dsh/profiles/
 - Session-header segments: balance / day tokens / month tokens / day cost / month cost / all-time cost / total tokens — each independently toggleable; **long-press a segment to drag it into place**, and what you see while dragging is what you get
 - Two placements: session header (horizontal) and sidebar footer (vertical); click a segment or ⚙ for the full detail panel and settings
 - 60s auto refresh (paused while the page is hidden; every placement and tab shares one fetch); config persisted via dual channels (localStorage + host `config.json`, independent of the app's random port)
-- Browser-agnostic token setup: one-click bookmarklet / console snippet / paste-and-save in the panel (quotes auto-stripped, takes effect immediately)
+- **Zero setup by default**: reuses your DSH DeepSeek account sign-in; if you are signed out, paste a token under Advanced
 - **Per-API-key filtering**: pick "all keys" or a single key in the panel — the same scope as the platform usage page's "API Key" dropdown (all keys by default)
 - All-time totals: tokens summed month by month with cross-month caching; cost comes from the account `total_costs` for "all keys", or is summed month by month for the selected key
 - Local usage proxy (optional): intercepts Anthropic-compatible requests and parses SSE/JSON usage precisely
@@ -73,16 +73,22 @@ Low-balance alert (one click opens the platform top-up page)
 
 ![alert](screenshots/alert-en.png)
 
-## Getting the platform token (works in any browser: Edge / Chrome / desktop)
+## Platform token (zero setup by default)
 
-1. Open the config panel → "Platform token" section
-2. Click "Open platform page" and sign in
-3. Drag the "Get Token" link to your bookmarks bar; on the platform page,
-   click the bookmark to auto-copy the token
-   (alternatives: copy the bookmark link to create one manually, or copy the console code to run in F12)
-4. Back in the panel, paste (quotes auto-stripped) → Save — takes effect immediately, no restart
+**Sign in to DeepSeek in DSH (Settings → Account) — the plugin reuses that session, no token hunting.**
 
+Credentials are resolved in order:
+
+1. `DS_PLATFORM_TOKEN` environment variable (scripts / temporary switch)
+2. DSH account session (via the account service `getPlatformSession()`, sent as `x-dsh-auth-token`)
+3. A token pasted manually (panel → "Advanced: paste a token manually", sent as `Authorization: Bearer`)
+
+Manual entry is for: not signed in, using a different account, or when the account route is unavailable.
+The old capture flow still lives under Advanced (open the platform page → bookmarklet / console snippet → paste).
 Saving goes through the host `POST /dsm/token` and atomically writes `~/.dsh/deepseek-monitor/platform-token`.
+
+Signing in, signing out or changing the token invalidates the usage cache immediately.
+
 
 ## Config
 
@@ -151,7 +157,7 @@ When wiring up `@deepseek-ai/dsh-subagent-claude-code`, add to the provider row 
 | `DS_MONITOR_LOG_MAX_BYTES` | `33554432` (32 MB) | log size cap; the file rotates to `.1` past it |
 | `DS_MONITOR_ALLOWED_HOSTS` | loopback names and IP literals only | extra `Host` values allowed to reach the host routes (comma-separated); `*` disables the check |
 | `DS_MONITOR_API_KEY` | falls back to `ANTHROPIC_AUTH_TOKEN`/`DEEPSEEK_API_KEY` | for `stats balance` |
-| `DS_PLATFORM_TOKEN` | none | platform token (or write `~/.dsh/deepseek-monitor/platform-token`) |
+| `DS_PLATFORM_TOKEN` | none | override the platform token; takes precedence over the DSH account session |
 | `DS_MONITOR_TZ_OFFSET` | `8` | bookkeeping timezone offset in hours; the platform buckets days by it |
 | `DS_MONITOR_TTL_MS` | `30000` | host-side usage result cache TTL in ms; `0` disables caching |
 | `DS_MONITOR_HISTORY_CONCURRENCY` | `6` | max concurrent history-month fetches |
@@ -183,6 +189,14 @@ full input price, `cache_read_input_tokens` at the cache-hit price.
 - The platform's internal endpoints are not a public contract and may change
 
 ## Changelog
+
+### 0.3.0
+
+- **Zero setup**: reuses the DSH DeepSeek account session, so no more copying `userToken` out of a browser; signing in/out or switching accounts invalidates the usage cache
+- Dual auth: account sessions use `x-dsh-auth-token`, manually pasted tokens keep `Authorization: Bearer`
+- The "Platform token" panel now reports the source (signed in via DSH / manual token / not signed in); a paste box appears when signed out, and capture tools moved under Advanced
+- Only the public `getPlatformSession()` method is used; `~/.dsh/.credentials.yaml` is never read directly
+- The manual token file, `DS_PLATFORM_TOKEN` and all `DS_MONITOR_*` variables are unchanged — no action needed on upgrade
 
 ### 0.2.4
 
