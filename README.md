@@ -2,9 +2,15 @@
 
 _✨ DeepSeek Harness 插件：余额、Token 用量与费用实时可见 ✨_
 
-![license](https://img.shields.io/github/license/moyuer233/dsh-deepseek-monitor) ![npm version](https://img.shields.io/npm/v/dsh-deepseek-monitor-moyuer233) ![npm downloads](https://img.shields.io/npm/dt/dsh-deepseek-monitor-moyuer233)
-![commit activity](https://img.shields.io/github/commit-activity/m/moyuer233/dsh-deepseek-monitor) ![last commit](https://img.shields.io/github/last-commit/moyuer233/dsh-deepseek-monitor)
-![node](https://img.shields.io/badge/node-%3E%3D18-339933) ![DeepSeek Harness](https://img.shields.io/badge/DeepSeek%20Harness-plugin-4B8BBE)
+<p align="center">
+  <a href="https://github.com/moyuer233/dsh-deepseek-monitor/blob/master/LICENSE"><img alt="license" src="https://img.shields.io/github/license/moyuer233/dsh-deepseek-monitor.svg?style=flat-square&labelColor=161b22&color=3DA639&logo=github&logoColor=white"/></a>
+  <a href="https://www.npmjs.com/package/dsh-deepseek-monitor-moyuer233"><img alt="npm version" src="https://img.shields.io/npm/v/dsh-deepseek-monitor-moyuer233.svg?style=flat-square&labelColor=161b22&color=CB3837&logo=npm&logoColor=white"/></a>
+  <a href="https://www.npmjs.com/package/dsh-deepseek-monitor-moyuer233"><img alt="npm downloads" src="https://img.shields.io/npm/dt/dsh-deepseek-monitor-moyuer233.svg?style=flat-square&labelColor=161b22&color=CB3837&logo=npm&logoColor=white"/></a>
+  <a href="https://github.com/moyuer233/dsh-deepseek-monitor/commits/master"><img alt="commit activity" src="https://img.shields.io/github/commit-activity/m/moyuer233/dsh-deepseek-monitor.svg?style=flat-square&labelColor=161b22&color=2088FF&logo=github&logoColor=white"/></a>
+  <a href="https://github.com/moyuer233/dsh-deepseek-monitor/commits/master"><img alt="last commit" src="https://img.shields.io/github/last-commit/moyuer233/dsh-deepseek-monitor.svg?style=flat-square&labelColor=161b22&color=2088FF&logo=github&logoColor=white"/></a>
+  <a href="https://nodejs.org"><img alt="node" src="https://img.shields.io/badge/node-%3E%3D18-339933.svg?style=flat-square&labelColor=161b22&logo=nodedotjs&logoColor=white"/></a>
+  <a href="https://github.com/deepseek-ai/deepseek-harness"><img alt="DeepSeek Harness plugin" src="https://img.shields.io/badge/DeepSeek%20Harness-plugin-4D6BFE.svg?style=flat-square&labelColor=161b22&logo=deepseek&logoColor=white"/></a>
+</p>
 
 **中文** | [English](README_EN.md)
 
