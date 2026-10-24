@@ -61,11 +61,11 @@ dsh plugin --profile web add github:moyuer233/dsh-deepseek-monitor
 
 会话头部（横排信息段）
 
-![header](screenshots/header.png?v=2)
+![header](screenshots/header.png?v=3)
 
 配置面板（显示开关；排序改到会话头部直接拖）
 
-![config](screenshots/config-panel.png?v=2)
+![config](screenshots/config-panel.png?v=3)
 
 侧边栏底部（竖排）
 
@@ -73,7 +73,7 @@ dsh plugin --profile web add github:moyuer233/dsh-deepseek-monitor
 
 长按显示块拖动排序（拖动中即时预览）
 
-![drag](screenshots/drag.png?v=2)
+![drag](screenshots/drag.png?v=3)
 
 余额不足提醒（点「去充值」跳转平台充值页）
 
