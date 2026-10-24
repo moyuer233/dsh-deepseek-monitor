@@ -49,7 +49,8 @@ The command installs this repo as a dependency of the profile (`~/.dsh/profiles/
 
 - Session-header segments: balance / day tokens / month tokens / day cost / month cost / all-time cost / total tokens — each independently toggleable; **long-press a segment to drag it into place**, and what you see while dragging is what you get
 - Two placements: session header (horizontal) and sidebar footer (vertical); click a segment or ⚙ for the full detail panel and settings
-- 60s auto refresh (paused while the page is hidden; every placement and tab shares one fetch); config persisted via dual channels (localStorage + host `config.json`, independent of the app's random port)
+- **Refresh right after each turn**: the host pushes one signal over SSE (`/dsm/events`) when the agent goes from running to idle, and the panel refetches immediately; on older hosts without that route it falls back to a 60s poll (paused while the page is hidden; every placement and tab shares one fetch)
+- Config persisted via dual channels (localStorage + host `config.json`, independent of the app's random port)
 - **Zero setup by default**: reuses your DSH DeepSeek account sign-in; if you are signed out, paste a token under Advanced
 - **Per-API-key filtering**: pick "all keys" or a single key in the panel — the same scope as the platform usage page's "API Key" dropdown (all keys by default)
 - All-time totals: tokens summed month by month with cross-month caching; cost comes from the account `total_costs` for "all keys", or is summed month by month for the selected key
@@ -207,8 +208,9 @@ full input price, `cache_read_input_tokens` at the cache-hit price.
 ### 0.4.0
 
 - **Merged balance**: topped-up and bonus balances are combined into one number, with the bonus part annotated in an accent color (`¥100 (¥50 bonus)`); the low-balance alert also uses the combined value
-- **Update notice**: checks npm every 30 minutes; a red dot appears on the gear when a newer version exists
-- **One-click update**: the panel footer shows current/latest and can run `npm install` in the profile directory; restart DSH to apply
+- **Per-turn refresh**: new `/dsm/events` (SSE); when an agent goes from running to idle the host pushes a refresh so the panel updates immediately; older hosts fall back to the 60s poll
+- **Update notice**: checks npm every 30 minutes; a red dot appears on the gear and the panel header shows `New version: vX.X.X` when a newer version exists
+- **One-click update**: the header's `Update` button runs `npm install` in the profile directory; restart DSH to apply. On failure the reason goes into a single-line input you can click to copy
 - **Compatibility**: theme tokens now chain new → legacy names (works on DSH 0.1 and 0.2+), dark hardcoded fallbacks removed (fixes the black panel on light themes); host route registration accepts older signatures; `dsh.client.inject` is empty
 
 ### 0.3.0
