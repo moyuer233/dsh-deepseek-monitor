@@ -31,8 +31,11 @@ const { apply } = await import("../lib/index.js");
 // ── 假 ctx：捕获注册的路由 ────────────────────────────────────────────────
 
 const routes = new Map();
+let disposeAll = null;
 apply({
-  effect: (fn) => fn(),
+  effect: (fn) => {
+    disposeAll = fn();
+  },
   webServer: {
     register: ({ path: routePath, handler }) => {
       routes.set(routePath, handler);
@@ -58,6 +61,10 @@ function call(routePath, { method = "GET", url, body = "", headers = {} } = {}, 
     end(chunk) {
       this.payload = chunk === undefined ? "" : String(chunk);
     },
+    write(chunk) {
+      this.payload += String(chunk);
+    },
+    on() {},
   };
   return Promise.resolve(handler(req, res)).then(() => ({
     status: res.statusCode,
@@ -86,7 +93,7 @@ const check = (name, cond, extra = "") => {
 console.log("\n[dsh-deepseek-monitor] host route self-test");
 
 // ── 路由注册 ─────────────────────────────────────────────────────────────
-check("注册 5 条路由", routes.size === 5, [...routes.keys()].join(","));
+check("注册 6 条路由", routes.size === 6, [...routes.keys()].join(","));
 
 // ── 读接口不受影响 ───────────────────────────────────────────────────────
 const cfgGet = await call("/dsm/config", { method: "GET" });
@@ -110,6 +117,11 @@ const postUsage = await call("/dsm/usage", { method: "POST" });
 check("POST /dsm/usage → 405", postUsage.status === 405, String(postUsage.status));
 const delToken = await call("/dsm/token", { method: "DELETE" });
 check("DELETE /dsm/token → 405", delToken.status === 405, String(delToken.status));
+const sse = await call("/dsm/events", { method: "GET" });
+check("GET /dsm/events → 200（SSE）", sse.status === 200, String(sse.status));
+const ssePost = await call("/dsm/events", { method: "POST" });
+check("POST /dsm/events → 405", ssePost.status === 405, String(ssePost.status));
+
 const ver = await call("/dsm/version", { method: "GET" });
 check(
   "GET /dsm/version 报告有新版本",
@@ -269,6 +281,7 @@ check(
   JSON.stringify(signedOutToken.json)
 );
 
+disposeAll?.();
 registry.close();
 fs.rmSync(tmp, { recursive: true, force: true });
 
