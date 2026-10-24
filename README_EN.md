@@ -26,7 +26,7 @@ sub-agents (e.g. Claude Code).
 
 ## Install (DSH plugin)
 
-Standard DSH bundle shape (the repo root is the plugin package — installable from npm, or from GitHub with one command). Current version `0.3.0`, npm package name `dsh-deepseek-monitor-moyuer233`.
+Standard DSH bundle shape (the repo root is the plugin package — installable from npm, or from GitHub with one command). Current version `0.4.0`, npm package name `dsh-deepseek-monitor-moyuer233`.
 
 ```bash
 # Install from npm (recommended)
@@ -161,6 +161,7 @@ When wiring up `@deepseek-ai/dsh-subagent-claude-code`, add to the provider row 
 | `DS_MONITOR_UPSTREAM` | `https://api.deepseek.com/anthropic` | upstream endpoint |
 | `DS_MONITOR_LOG` | `~/.dsh/deepseek-monitor/usage.jsonl` | proxy log file |
 | `DS_MONITOR_LOG_MAX_BYTES` | `33554432` (32 MB) | log size cap; the file rotates to `.1` past it |
+| `DS_MONITOR_LATEST_BASE` | mirror + official registry | version-check sources (comma separated) |
 | `DS_MONITOR_ALLOWED_HOSTS` | loopback names and IP literals only | extra `Host` values allowed to reach the host routes (comma-separated); `*` disables the check |
 | `DS_MONITOR_API_KEY` | falls back to `ANTHROPIC_AUTH_TOKEN`/`DEEPSEEK_API_KEY` | for `stats balance` |
 | `DS_PLATFORM_TOKEN` | none | override the platform token; takes precedence over the DSH account session |
@@ -187,6 +188,13 @@ full input price, `cache_read_input_tokens` at the cache-hit price.
 {"ts":"2026-08-15T08:00:00.000Z","runId":"...","kind":"messages","streaming":true,"model":"deepseek-chat","status":200,"inputTokens":1000,"cacheCreation":200,"cacheRead":300,"outputTokens":500,"inputCost":0.00027,"cacheCreationCost":0.000054,"cacheReadCost":0.000021,"outputCost":0.00055,"totalCostCny":0.000895,"error":null,"durationMs":1234}
 ```
 
+## Compatibility
+
+- **Theme tokens**: DSH 0.2 renamed a batch of `--dsw-*` variables. The plugin chains `var(new, var(old, neutral))`, so both 0.1 and 0.2+ resolve the theme colors; fallbacks are no longer hardcoded dark, so light themes no longer degrade to a black panel.
+- **Host routes**: `webServer.register` is tried as `{ kind, path, handler }` (0.2), `{ path, handler }` and the older `(path, handler)`.
+- **Account session**: when `deepseekAccount` is absent or signed out, the plugin falls back to a manually saved token.
+- **Client deps**: the bundle only requires `react` / `react-dom`; `dsh.client.inject` is empty.
+
 ## Known limitations
 
 - The proxy only meters requests routed through it; direct DeepSeek traffic is not counted
@@ -195,6 +203,13 @@ full input price, `cache_read_input_tokens` at the cache-hit price.
 - The platform's internal endpoints are not a public contract and may change
 
 ## Changelog
+
+### 0.4.0
+
+- **Merged balance**: topped-up and bonus balances are combined into one number, with the bonus part annotated in an accent color (`¥100 (¥50 bonus)`); the low-balance alert also uses the combined value
+- **Update notice**: checks npm every 30 minutes; a red dot appears on the gear when a newer version exists
+- **One-click update**: the panel footer shows current/latest and can run `npm install` in the profile directory; restart DSH to apply
+- **Compatibility**: theme tokens now chain new → legacy names (works on DSH 0.1 and 0.2+), dark hardcoded fallbacks removed (fixes the black panel on light themes); host route registration accepts older signatures; `dsh.client.inject` is empty
 
 ### 0.3.0
 

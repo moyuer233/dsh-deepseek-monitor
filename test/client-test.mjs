@@ -179,5 +179,37 @@ eq(
   true
 );
 
+// ── 余额合计：充值 + 赠送，赠送单独上色 ───────────────────────────────────
+const parts = mod.__balanceParts;
+eq("余额合计：100 + 50", parts({ balance: 100, bonusBalance: 50 }), { total: 150, bonus: 50 });
+eq("余额合计：无赠送", parts({ balance: 30, bonusBalance: 0 }), { total: 30, bonus: 0 });
+eq("余额合计：缺字段按 0", parts({}), { total: 0, bonus: 0 });
+eq("余额合计：字符串金额可累加", parts({ balance: "12.5", bonusBalance: "2.5" }), { total: 15, bonus: 2.5 });
+
+// ── 主题令牌：DSH 0.2 把一批 --dsw-* 变量改名，旧版仍要用旧名 ────────────────
+// 规则：新名在前、旧名作为二级兜底（var(新, var(旧, ...))），两种宿主都能取到主题色；
+// 兜底值不许再写死深色，否则浅色主题会静默降级成黑底（issue #1）。
+const TOKEN_PAIRS = [
+  ["--dsw-alias-bg-layer-2", "--dsw-alias-fill-l2"],
+  ["--dsw-alias-bg-layer-3", "--dsw-alias-fill-l3"],
+  ["--dsw-alias-brand-primary", "--dsw-alias-accent"],
+  ["--dsw-alias-state-error-primary", "--dsw-alias-danger"],
+  ["--dsw-alias-state-success-primary", "--dsw-alias-success"],
+  ["--dsw-static-neutral-00", "--dsw-static-neutral-0"]
+];
+for (const [next, legacy] of TOKEN_PAIRS) {
+  const all = (source.match(new RegExp("var\\(" + legacy + "[,)]", "g")) || []).length;
+  const chained = (source.match(new RegExp("var\\(" + next + ", var\\(" + legacy + "[,)]", "g")) || []).length;
+  eq("令牌兼容：" + legacy + " 只作为 " + next + " 的兜底", all, chained);
+}
+eq(
+  "主题变量不再写死深色兜底",
+  /var\(--dsw-[a-z0-9-]+, #[0-9a-fA-F]{3,6}\)/.test(source),
+  false
+);
+for (const fontToken of ["--dsw-font-xs-strong-13", "--dsw-font-xs-13", "--dsw-font-xxs-12", "--dsw-font-xxxs-11"]) {
+  eq("字体令牌有兜底：" + fontToken, new RegExp("var\\(" + fontToken + ", ").test(source), true);
+}
+
 console.log(failures === 0 ? "[OK] client 自检通过" : `[FAIL] ${failures} 项`);
 process.exit(failures);

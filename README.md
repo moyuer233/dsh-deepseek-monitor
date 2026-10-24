@@ -23,7 +23,7 @@ DeepSeek 平台的余额、日/月/累计 Token 总量与费用，支持长按�
 
 ## 安装
 
-标准 DSH bundle 格式（根包即插件，既可从 npm 安装，也可从 GitHub 一条命令安装）。当前版本 `0.3.0`，npm 包名 `dsh-deepseek-monitor-moyuer233`。
+标准 DSH bundle 格式（根包即插件，既可从 npm 安装，也可从 GitHub 一条命令安装）。当前版本 `0.4.0`，npm 包名 `dsh-deepseek-monitor-moyuer233`。
 
 ```bash
 # 从 npm 安装（推荐）
@@ -52,6 +52,8 @@ dsh plugin --profile web add github:moyuer233/dsh-deepseek-monitor
 - 累计（总）数据：Token 逐月累加并跨月缓存；费用在「全部 Key」时取账户 `total_costs`，选中某个 Key 时按该 Key 逐月累加
 - 本地用量代理（可选）：拦截 Anthropic 兼容请求，精确解析 SSE/JSON 用量并记账
 - **余额不足提醒**：余额低于阈值时弹窗，点「去充值」跳平台充值页；阈值（默认 ¥5）与提醒间隔（默认 6 小时）都能在面板里改，也能整个关掉
+- **余额合并显示**：余额 = 充值余额 + 赠送余额，赠送部分用强调色括注在后面（例：`¥100（¥50赠送）`）
+- **新版本提示与一键更新**：有新版时齿轮右上角亮红点，面板底部显示当前 / 最新版本，点「更新到最新版」即可安装，重启 DSH 生效
 - **侧边栏独立配置**：侧边栏有自己的一套「显示哪些项 + 顺序」，与头部互不影响；面板里的开关控制显示，顺序直接在侧边栏里长按某一行拖动调整
 
 ## 预览
@@ -155,6 +157,7 @@ npm test             # 自测：代理 + 宿主采集 + 宿主路由（全内置
 | `DS_MONITOR_LOG` | `~/.dsh/deepseek-monitor/usage.jsonl` | 代理记账文件 |
 | `DS_MONITOR_LOG_MAX_BYTES` | `33554432`（32 MB） | 记账文件上限，超过就轮转出一代 `.1` |
 | `DS_MONITOR_ALLOWED_HOSTS` | 仅回环名与 IP 字面量 | 额外允许访问宿主路由的 Host（逗号分隔），`*` 关闭校验 |
+| `DS_MONITOR_LATEST_BASE` | 镜像 + 官方 registry | 新版本查询源（逗号分隔，按顺序尝试） |
 | `DS_MONITOR_API_KEY` | 回退 `ANTHROPIC_AUTH_TOKEN`/`DEEPSEEK_API_KEY` | `stats balance` 用 |
 | `DS_PLATFORM_TOKEN` | 无 | 手动指定平台 token，优先于 DSH 账号登录态 |
 | `DS_MONITOR_TZ_OFFSET` | `8` | 记账时区偏移（小时）：平台按该时区切分「日」 |
@@ -180,6 +183,13 @@ npm test             # 自测：代理 + 宿主采集 + 宿主路由（全内置
 {"ts":"2026-08-15T08:00:00.000Z","runId":"...","kind":"messages","streaming":true,"model":"deepseek-chat","status":200,"inputTokens":1000,"cacheCreation":200,"cacheRead":300,"outputTokens":500,"inputCost":0.00027,"cacheCreationCost":0.000054,"cacheReadCost":0.000021,"outputCost":0.00055,"totalCostCny":0.000895,"error":null,"durationMs":1234}
 ```
 
+## 兼容性
+
+- **主题变量**：DSH 0.2 把 `--dsw-alias-fill-l2`、`--dsw-alias-accent`、`--dsw-alias-danger`、`--dsw-alias-success`、`--dsw-static-neutral-0` 等一批变量改了名。插件用「新名 → 旧名 → 中性兜底」的链式 `var()`，0.1 与 0.2+ 都能取到主题色；兜底不再写死深色，浅色主题不会退化成黑底。
+- **宿主路由**：`webServer.register` 依次尝试 0.2 的 `{ kind, path, handler }`、`{ path, handler }` 与更早的 `(path, handler)` 三种签名。
+- **账号登录态**：`deepseekAccount` 服务不存在或未登录时自动回落到手填 token，不阻塞面板。
+- **客户端依赖**：bundle 只 `require("react")` / `require("react-dom")`，`dsh.client.inject` 为空，不依赖任何 `@deepseek-ai/dsh-client-*` 子包。
+
 ## 已知限制
 
 - 代理只统计经过它的请求；直接访问 DeepSeek 的流量不计入
@@ -188,6 +198,13 @@ npm test             # 自测：代理 + 宿主采集 + 宿主路由（全内置
 - 平台内部接口非公开契约，可能随平台更新而变化
 
 ## 更新日志
+
+### 0.4.0
+
+- **余额合并显示**：充值余额与赠送余额合并成一个数字，赠送部分用强调色括注（`¥100（¥50赠送）`）；余额不足提醒也改按合计判断
+- **新版本提示**：插件每 30 分钟查一次 npm 最新版，有新版本时齿轮右上角亮红点，悬停提示版本号
+- **一键更新**：面板底部「版本」区显示当前 / 最新版本，点「更新到最新版」在 profile 目录执行 `npm install`，重启 DSH 生效
+- **兼容性**：主题变量改为「新名 → 旧名」链式兜底（DSH 0.1 与 0.2+ 都可用），去掉写死的深色兜底（修复浅色主题下变黑底）；宿主路由注册兼容旧签名；`dsh.client.inject` 置空
 
 ### 0.3.0
 

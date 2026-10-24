@@ -5,6 +5,7 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import http from "node:http";
 import { Readable } from "node:stream";
 
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "dsm-host-routes-"));
@@ -16,6 +17,14 @@ process.env.DS_MONITOR_LOG = path.join(tmp, "usage.jsonl");
 process.env.DS_MONITOR_PORT = "1";
 process.env.DS_MONITOR_HOST = "127.0.0.1";
 delete process.env.DS_PLATFORM_TOKEN;
+
+// 版本查询指向本地假 registry，避免测试打外网
+const registry = http.createServer((req, res) => {
+  res.writeHead(200, { "content-type": "application/json" });
+  res.end(JSON.stringify({ version: "9.9.9" }));
+});
+await new Promise((r) => registry.listen(0, "127.0.0.1", r));
+process.env.DS_MONITOR_LATEST_BASE = `http://127.0.0.1:${registry.address().port}`;
 
 const { apply } = await import("../lib/index.js");
 
@@ -77,7 +86,7 @@ const check = (name, cond, extra = "") => {
 console.log("\n[dsh-deepseek-monitor] host route self-test");
 
 // ── 路由注册 ─────────────────────────────────────────────────────────────
-check("注册 3 条路由", routes.size === 3, [...routes.keys()].join(","));
+check("注册 5 条路由", routes.size === 5, [...routes.keys()].join(","));
 
 // ── 读接口不受影响 ───────────────────────────────────────────────────────
 const cfgGet = await call("/dsm/config", { method: "GET" });
@@ -101,6 +110,21 @@ const postUsage = await call("/dsm/usage", { method: "POST" });
 check("POST /dsm/usage → 405", postUsage.status === 405, String(postUsage.status));
 const delToken = await call("/dsm/token", { method: "DELETE" });
 check("DELETE /dsm/token → 405", delToken.status === 405, String(delToken.status));
+const ver = await call("/dsm/version", { method: "GET" });
+check(
+  "GET /dsm/version 报告有新版本",
+  ver.status === 200 && ver.json?.latest === "9.9.9" && ver.json?.hasUpdate === true,
+  JSON.stringify(ver.json)
+);
+const updGet = await call("/dsm/update", { method: "GET" });
+check("GET /dsm/update → 405", updGet.status === 405, String(updGet.status));
+const updCross = await call("/dsm/update", {
+  method: "POST",
+  headers: { ...JSON_CT, "sec-fetch-site": "cross-site" },
+  body: "{}",
+});
+check("跨站 POST /dsm/update → 403", updCross.status === 403, String(updCross.status));
+
 const headUsage = await call("/dsm/usage", { method: "HEAD" });
 check(
   "HEAD /dsm/usage → 200 且不回响应体（不为探测打平台接口）",
@@ -245,6 +269,7 @@ check(
   JSON.stringify(signedOutToken.json)
 );
 
+registry.close();
 fs.rmSync(tmp, { recursive: true, force: true });
 
 console.log(failures === 0 ? "\n全部通过 ✅" : `\n${failures} 项失败 ❌`);
