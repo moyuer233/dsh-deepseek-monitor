@@ -62,11 +62,11 @@ The command installs this repo as a dependency of the profile (`~/.dsh/profiles/
 
 Session header (horizontal segments)
 
-![header](screenshots/header-en.png?v=3)
+![header](screenshots/header-en.png?v=4)
 
 Config panel (visibility toggles; reorder by dragging the segments themselves)
 
-![config](screenshots/config-panel-en.png?v=3)
+![config](screenshots/config-panel-en.png?v=4)
 
 Sidebar footer (vertical stack)
 
@@ -74,7 +74,7 @@ Sidebar footer (vertical stack)
 
 Long-press a segment and drag it to reorder (live preview while dragging)
 
-![drag](screenshots/drag-en.png?v=3)
+![drag](screenshots/drag-en.png?v=4)
 
 Low-balance alert (one click opens the platform top-up page)
 
