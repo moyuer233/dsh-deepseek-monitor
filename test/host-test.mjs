@@ -286,4 +286,5 @@ registry.close();
 fs.rmSync(tmp, { recursive: true, force: true });
 
 console.log(failures === 0 ? "\n全部通过 ✅" : `\n${failures} 项失败 ❌`);
-process.exitCode = failures === 0 ? 0 : 1;
+// 宿主侧有 2 秒轮询的定时器与 SSE 连接，显式退出避免测试进程挂着
+process.exit(failures === 0 ? 0 : 1);
