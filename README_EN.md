@@ -26,7 +26,7 @@ sub-agents (e.g. Claude Code).
 
 ## Install (DSH plugin)
 
-Standard DSH bundle shape (the repo root is the plugin package — installable from npm, or from GitHub with one command). Current version `0.4.0`, npm package name `dsh-deepseek-monitor-moyuer233`.
+Standard DSH bundle shape (the repo root is the plugin package — installable from npm, or from GitHub with one command). Current version `0.4.1`, npm package name `dsh-deepseek-monitor-moyuer233`.
 
 ```bash
 # Install from npm (recommended)
@@ -204,6 +204,10 @@ full input price, `cache_read_input_tokens` at the cache-hit price.
 - The platform's internal endpoints are not a public contract and may change
 
 ## Changelog
+
+### 0.4.1
+
+- **Self-update now uses pnpm**: when the profile is pnpm-managed it runs `pnpm update <pkg>` so the dependency and lockfile move together (npm used to bypass the lockfile, and a profile reinstall would then restore the old locked commit — 0.4.0 fell back to 0.2.4 in testing); a clear message is returned when pnpm is missing
 
 ### 0.4.0
 
