@@ -23,7 +23,7 @@ DeepSeek 平台的余额、日/月/累计 Token 总量与费用，支持长按�
 
 ## 安装
 
-标准 DSH bundle 格式（根包即插件，既可从 npm 安装，也可从 GitHub 一条命令安装）。当前版本 `0.4.1`，npm 包名 `dsh-deepseek-monitor-moyuer233`。
+标准 DSH bundle 格式（根包即插件，既可从 npm 安装，也可从 GitHub 一条命令安装）。当前版本 `0.4.2`，npm 包名 `dsh-deepseek-monitor-moyuer233`。
 
 ```bash
 # 从 npm 安装（推荐）
@@ -199,6 +199,10 @@ npm test             # 自测：代理 + 宿主采集 + 宿主路由（全内置
 - 平台内部接口非公开契约，可能随平台更新而变化
 
 ## 更新日志
+
+### 0.4.2
+
+- **自更新更稳**：先在 PATH 与常见全局目录里定位 `pnpm.cmd`，找不到时再交给 `cmd /d /s /c` 让 shell 找；失败提示保留具体错误
 
 ### 0.4.1
 

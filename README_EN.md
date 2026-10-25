@@ -26,7 +26,7 @@ sub-agents (e.g. Claude Code).
 
 ## Install (DSH plugin)
 
-Standard DSH bundle shape (the repo root is the plugin package — installable from npm, or from GitHub with one command). Current version `0.4.1`, npm package name `dsh-deepseek-monitor-moyuer233`.
+Standard DSH bundle shape (the repo root is the plugin package — installable from npm, or from GitHub with one command). Current version `0.4.2`, npm package name `dsh-deepseek-monitor-moyuer233`.
 
 ```bash
 # Install from npm (recommended)
@@ -204,6 +204,10 @@ full input price, `cache_read_input_tokens` at the cache-hit price.
 - The platform's internal endpoints are not a public contract and may change
 
 ## Changelog
+
+### 0.4.2
+
+- **自更新更稳**：先在 PATH 与常见全局目录里定位 `pnpm.cmd`，找不到时再交给 `cmd /d /s /c` 让 shell 找；失败提示保留具体错误
 
 ### 0.4.1
 
